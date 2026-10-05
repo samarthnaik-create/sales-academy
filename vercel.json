@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "src/app/api/quiz/generate/route.ts": { "maxDuration": 60 },
+    "src/app/api/admin/extract-doc/route.ts": { "maxDuration": 60 }
+  }
+}
