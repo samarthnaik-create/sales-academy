@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { requireUser } from '@/lib/auth'
 import { connectDB } from '@/lib/mongoose'
 import { Course } from '@/models/Course'
