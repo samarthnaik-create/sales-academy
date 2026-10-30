@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   if (!apiKey) return NextResponse.json({ error: 'AI not configured' }, { status: 500 })
 
   const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
   // Extract plain text — handles both flat [{title,html}] and hierarchical [{title,modules:[...]}]
   let plainContent = ''
