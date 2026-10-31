@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 
 const PASS_THRESHOLD = 80
 const MAX_VIOLATIONS = 3
+const QUESTION_TIME = 30
 
 const RULES = [
   'No switching tabs, no minimising, no second screens.',
@@ -51,15 +52,36 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay 
   const [result, setResult] = useState<QuizResult | null>(null)
   const [violations, setViolations] = useState(0)
   const [showWarning, setShowWarning] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(QUESTION_TIME)
 
   // Use refs so event handlers always see latest values
   const violationsRef = useRef(0)
   const lastViolationTime = useRef(0)
   const answersRef = useRef<Record<string, string>>({})
   const stateRef = useRef<State>('intro')
+  const currentIndexRef = useRef(currentIndex)
 
   useEffect(() => { answersRef.current = answers }, [answers])
   useEffect(() => { stateRef.current = state }, [state])
+  useEffect(() => { currentIndexRef.current = currentIndex }, [currentIndex])
+
+  // Per-question countdown — resets every time the question changes
+  useEffect(() => {
+    if (state !== 'taking') return
+    setTimeLeft(QUESTION_TIME)
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          // Auto-advance to next question; stay on last question when time runs out
+          const next = currentIndexRef.current + 1
+          if (next < questions.length) setCurrentIndex(next)
+          return QUESTION_TIME
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [currentIndex, state, questions.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const current = questions[currentIndex]
   const total = questions.length
@@ -309,7 +331,15 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay 
 
       {/* Question card */}
       <div className="bg-white rounded-xl border border-zinc-200 p-6 mb-4">
-        <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Question {currentIndex + 1} of {total}</span>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Question {currentIndex + 1} of {total}</span>
+          <span className={cn(
+            'inline-flex items-center gap-1.5 text-sm font-bold tabular-nums px-2.5 py-0.5 rounded-full',
+            timeLeft > 15 ? 'bg-green-50 text-green-600' : timeLeft > 5 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600 animate-pulse'
+          )}>
+            ⏱ {timeLeft}s
+          </span>
+        </div>
         <p className="text-zinc-900 font-semibold mt-2 mb-5 leading-snug">{current.question}</p>
         <div className="space-y-3">
           {current.options.map((opt, i) => {
