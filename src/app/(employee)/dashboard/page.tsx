@@ -4,11 +4,9 @@ import { requireUser } from '@/lib/auth'
 import { connectDB } from '@/lib/mongoose'
 import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
-import { User } from '@/models/User'
-import { QuizAttempt } from '@/models/QuizAttempt'
 import { Announcement } from '@/models/Announcement'
 import Link from 'next/link'
-import { Trophy, Medal, ArrowRight } from 'lucide-react'
+import { Trophy, ArrowRight } from 'lucide-react'
 import { CourseSearch } from '@/components/employee/course-search'
 
 interface TopicGroup { title: string; modules: { title: string }[] }
@@ -37,10 +35,9 @@ export default async function DashboardPage() {
 
   await connectDB()
 
-  const [courses, progressList, employees, announcements, resumeProgressDoc] = await Promise.all([
+  const [courses, progressList, announcements, resumeProgressDoc] = await Promise.all([
     Course.find().sort({ dayNumber: 1 }).lean(),
     Progress.find({ userId: user.id }).lean(),
-    User.find({ role: 'employee' }).lean(),
     Announcement.find({
       $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
     }).sort({ createdAt: -1 }).limit(3).lean(),
@@ -82,43 +79,6 @@ export default async function DashboardPage() {
   const resumePosition = resumeProgress
     ? resolvePosition(resumeProgress.course?.content ?? null, resumeProgress.lastTopicIdx, resumeProgress.lastModuleIdx)
     : null
-
-  // Leaderboard: fetch all progress and attempts for employees
-  const empIds = employees.map(e => e._id)
-  const [allEmpProgress, allEmpAttempts] = await Promise.all([
-    Progress.find({ userId: { $in: empIds } }).lean(),
-    QuizAttempt.find({ userId: { $in: empIds } }).lean(),
-  ])
-
-  const progressByEmp: Record<string, typeof allEmpProgress> = {}
-  for (const p of allEmpProgress) {
-    const uid = String(p.userId)
-    if (!progressByEmp[uid]) progressByEmp[uid] = []
-    progressByEmp[uid].push(p)
-  }
-
-  const attemptsByEmp: Record<string, typeof allEmpAttempts> = {}
-  for (const a of allEmpAttempts) {
-    const uid = String(a.userId)
-    if (!attemptsByEmp[uid]) attemptsByEmp[uid] = []
-    attemptsByEmp[uid].push(a)
-  }
-
-  const leaderboard = employees
-    .map(emp => {
-      const empId = String(emp._id)
-      const empProgress = progressByEmp[empId] || []
-      const empAttempts = attemptsByEmp[empId] || []
-      const done = empProgress.filter(p => p.completed).length
-      const empPct = total > 0 ? Math.round((done / total) * 100) : 0
-      const scores = empAttempts.map(a => a.score)
-      const avgScore = scores.length ? Math.round(scores.reduce((s, n) => s + n, 0) / scores.length) : 0
-      return { id: empId, name: emp.name, pct: empPct, done, avgScore }
-    })
-    .sort((a, b) => b.pct - a.pct || b.avgScore - a.avgScore)
-    .slice(0, 5)
-
-  const myRank = leaderboard.findIndex(e => e.id === user.id) + 1
 
   // Map courses for CourseSearch
   const coursesForSearch = courses.map(c => ({
@@ -169,7 +129,6 @@ export default async function DashboardPage() {
           <Trophy className="h-10 w-10 mx-auto mb-3 text-green-200" />
           <h2 className="text-xl font-bold mb-1">Training Complete!</h2>
           <p className="text-green-100 text-sm">You have completed all {total} days of the Sales Academy.</p>
-          {myRank > 0 && <p className="text-green-200 text-xs mt-2">You are ranked #{myRank} on the leaderboard</p>}
         </div>
       ) : (
         <div className="bg-red-600 rounded-2xl p-6 mb-8 text-white">
@@ -189,53 +148,14 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Day grid with search */}
-        <div className="lg:col-span-2">
-          {total === 0 ? (
-            <div className="text-center py-16 text-zinc-400">
-              <p className="text-lg font-medium">No courses yet</p>
-              <p className="text-sm mt-1">Your admin will add courses soon.</p>
-            </div>
-          ) : (
-            <CourseSearch courses={coursesForSearch} progressMap={progressMap} />
-          )}
+      {total === 0 ? (
+        <div className="text-center py-16 text-zinc-400">
+          <p className="text-lg font-medium">No courses yet</p>
+          <p className="text-sm mt-1">Your admin will add courses soon.</p>
         </div>
-
-        {/* Leaderboard */}
-        {leaderboard.length > 0 && (
-          <div className="bg-white rounded-xl border border-zinc-200 p-5 h-fit">
-            <div className="flex items-center gap-2 mb-4">
-              <Trophy className="h-4 w-4 text-amber-500" />
-              <h2 className="font-semibold text-sm text-zinc-900">Leaderboard</h2>
-            </div>
-            <div className="space-y-3">
-              {leaderboard.map((emp, i) => {
-                const isMe = emp.id === user.id
-                const medals = ['🥇', '🥈', '🥉']
-                return (
-                  <div key={emp.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${isMe ? 'bg-red-50 border border-red-100' : ''}`}>
-                    <span className="text-base w-6 text-center shrink-0">
-                      {i < 3 ? medals[i] : <Medal className="h-4 w-4 text-zinc-300 mx-auto" />}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${isMe ? 'text-red-700' : 'text-zinc-900'}`}>
-                        {emp.name.split(' ')[0]}{isMe ? ' (You)' : ''}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <div className="h-1 flex-1 bg-zinc-100 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${emp.pct === 100 ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${emp.pct}%` }} />
-                        </div>
-                        <span className="text-xs text-zinc-400 shrink-0">{emp.pct}%</span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-      </div>
+      ) : (
+        <CourseSearch courses={coursesForSearch} progressMap={progressMap} />
+      )}
     </div>
   )
 }
