@@ -15,7 +15,6 @@ export function Sidebar({ userName, role }: SidebarProps) {
 
   const employeeLinks = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/settings', icon: Settings, label: 'Settings' },
   ]
 
   const adminLinks = [
