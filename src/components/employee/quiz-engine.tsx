@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, CheckCircle2, XCircle, Loader2, Trophy, ShieldAlert, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const PASS_THRESHOLD = 80
+const PASS_THRESHOLD = 90
 const MAX_VIOLATIONS = 3
 const QUESTION_TIME = 30
 

@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     const prevCourse = await Course.findOne({ dayNumber: dayNumber - 1 }).lean()
     if (prevCourse) {
       const passedPrev = await Progress.find(
-        { courseId: prevCourse._id, completed: true, score: { $gte: 80 } },
+        { courseId: prevCourse._id, completed: true, score: { $gte: 90 } },
         { userId: 1 }
       ).lean()
       if (passedPrev.length > 0) {

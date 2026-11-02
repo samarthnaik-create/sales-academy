@@ -30,7 +30,7 @@ export async function checkCourseAccess(
 
   const prevProgress = await Progress.findOne({ userId, courseId: prevCourse._id }).lean()
 
-  if (prevProgress?.completed && prevProgress.score >= 80) {
+  if (prevProgress?.completed && prevProgress.score >= 90) {
     // Auto-write so next visit doesn't need this check
     await Progress.findOneAndUpdate(
       { userId, courseId },
@@ -58,5 +58,5 @@ export function computeUnlocked(
   const prev = courses.find(c => c.dayNumber === dayNumber - 1)
   if (!prev) return false
   const pp = progressMap[prev.id]
-  return !!(pp?.completed && pp.score >= 80)
+  return !!(pp?.completed && pp.score >= 90)
 }

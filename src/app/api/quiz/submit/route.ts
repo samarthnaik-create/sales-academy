@@ -8,7 +8,7 @@ import { Course } from '@/models/Course'
 import { Certificate } from '@/models/Certificate'
 import { getSession as getAiSession, deleteSession } from '@/lib/ai-quiz-store'
 
-const PASS_THRESHOLD = 80
+const PASS_THRESHOLD = 90
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
