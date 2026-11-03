@@ -1,8 +1,9 @@
 'use client'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import Link from '@tiptap/extension-link'
 import { useEffect } from 'react'
-import { Bold, Italic, Heading2, Heading3, List, ListOrdered, Minus } from 'lucide-react'
+import { Bold, Italic, Heading2, Heading3, List, ListOrdered, Minus, Link2, Link2Off } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -29,7 +30,10 @@ function ToolbarButton({ onClick, active, children, title }: { onClick: () => vo
 
 export function RichTextEditor({ value, onChange, placeholder }: Props) {
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      Link.configure({ openOnClick: false, autolink: true, linkOnPaste: true }),
+    ],
     content: value,
     onUpdate({ editor }) {
       onChange(editor.getHTML())
@@ -80,6 +84,21 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
         <ToolbarButton title="Divider" onClick={() => editor.chain().focus().setHorizontalRule().run()}>
           <Minus className="h-3.5 w-3.5" />
         </ToolbarButton>
+        <div className="w-px h-4 bg-zinc-200 mx-1" />
+        <ToolbarButton
+          title="Add Link"
+          active={editor.isActive('link')}
+          onClick={() => {
+            if (editor.isActive('link')) {
+              editor.chain().focus().unsetLink().run()
+            } else {
+              const url = window.prompt('Enter URL')
+              if (url) editor.chain().focus().setLink({ href: url }).run()
+            }
+          }}
+        >
+          {editor.isActive('link') ? <Link2Off className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
+        </ToolbarButton>
       </div>
 
       {/* Editor area */}
@@ -102,6 +121,8 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
         .ProseMirror em { font-style: italic; }
         .ProseMirror hr { border: none; border-top: 1px solid #e4e4e7; margin: 0.75rem 0; }
         .ProseMirror:focus { outline: none; }
+        .ProseMirror a { color: #dc2626; text-decoration: underline; cursor: pointer; }
+        .ProseMirror a:hover { color: #b91c1c; }
       `}</style>
     </div>
   )

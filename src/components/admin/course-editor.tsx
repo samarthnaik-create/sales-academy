@@ -50,6 +50,8 @@ export function CourseEditor({ course }: { course: Course | null }) {
   const [uploading, setUploading] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([])
   const [error, setError] = useState('')
+  const [dragOverModule, setDragOverModule] = useState<number | null>(null)
+  const dragModuleRef = useRef<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const currentTopic = topics[activeTopic]
@@ -134,6 +136,22 @@ export function CourseEditor({ course }: { course: Course | null }) {
     setTopics(prev => prev.map((t, i) =>
       i === ti ? { ...t, modules: t.modules.map((m, idx) => idx === mi ? { ...m, [field]: value } : m) } : t
     ))
+  }
+
+  function dropModule(toIndex: number) {
+    const fromIndex = dragModuleRef.current
+    if (fromIndex === null || fromIndex === toIndex) { setDragOverModule(null); return }
+    const ti = activeTopic
+    setTopics(prev => prev.map((t, i) => {
+      if (i !== ti) return t
+      const mods = [...t.modules]
+      const [moved] = mods.splice(fromIndex, 1)
+      mods.splice(toIndex, 0, moved)
+      return { ...t, modules: mods }
+    }))
+    setActiveModule(toIndex)
+    setDragOverModule(null)
+    dragModuleRef.current = null
   }
 
   function addQuestion() {
@@ -357,8 +375,18 @@ export function CourseEditor({ course }: { course: Course | null }) {
                       <button
                         key={mi}
                         type="button"
+                        draggable
+                        onDragStart={() => { dragModuleRef.current = mi }}
+                        onDragOver={e => { e.preventDefault(); setDragOverModule(mi) }}
+                        onDragLeave={() => setDragOverModule(null)}
+                        onDrop={() => dropModule(mi)}
+                        onDragEnd={() => { setDragOverModule(null); dragModuleRef.current = null }}
                         onClick={() => setActiveModule(mi)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${activeModule === mi ? 'bg-zinc-800 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-grab active:cursor-grabbing ${
+                          dragOverModule === mi && dragModuleRef.current !== mi
+                            ? 'ring-2 ring-red-400 ring-offset-1'
+                            : ''
+                        } ${activeModule === mi ? 'bg-zinc-800 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
                       >
                         <FileText className="h-3 w-3" />
                         {mi + 1}. {m.title || `Module ${mi + 1}`}
