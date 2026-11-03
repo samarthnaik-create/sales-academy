@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { BookOpen, LayoutDashboard, Users, LogOut, ShieldCheck, BarChart2, Settings, Megaphone } from 'lucide-react'
+import { BookOpen, LayoutDashboard, Users, LogOut, ShieldCheck, BarChart2, Megaphone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface SidebarProps {

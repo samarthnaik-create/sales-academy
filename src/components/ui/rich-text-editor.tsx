@@ -138,7 +138,6 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
           <Minus className="h-3.5 w-3.5" />
         </ToolbarButton>
         <div className="w-px h-4 bg-zinc-200 mx-1" />
-        <div className="w-px h-4 bg-zinc-200 mx-1" />
         <ToolbarButton title="Insert Image" onClick={() => imageInputRef.current?.click()}>
           <ImagePlus className="h-3.5 w-3.5" />
         </ToolbarButton>

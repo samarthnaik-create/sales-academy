@@ -356,7 +356,7 @@ export function LessonViewer({ content, courseId, dayNumber, quizCount, complete
             <p className="font-semibold text-sm text-zinc-900">Quiz</p>
             <p className="text-xs text-zinc-400">
               {allRead
-                ? `${quizCount > 0 ? quizCount + ' questions' : 'AI-generated'} · Pass 80% to unlock next day`
+                ? `${quizCount > 0 ? quizCount + ' questions' : 'AI-generated'} · Pass 90% to unlock next day`
                 : `Read all ${totalModules} module${totalModules !== 1 ? 's' : ''} to unlock the quiz`}
             </p>
           </div>

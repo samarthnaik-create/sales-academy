@@ -135,7 +135,7 @@ export default async function DayPage({ params }: Props) {
             </div>
             <div>
               <p className="font-semibold text-sm text-zinc-900">Quiz · {course.title}</p>
-              <p className="text-xs text-zinc-400">{quizCount > 0 ? `${quizCount} questions` : 'AI-generated questions'} · Pass 80%</p>
+              <p className="text-xs text-zinc-400">{quizCount > 0 ? `${quizCount} questions` : 'AI-generated questions'} · Pass 90%</p>
             </div>
           </div>
           {progress?.completed && (

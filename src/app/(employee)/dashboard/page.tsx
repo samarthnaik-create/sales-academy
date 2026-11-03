@@ -128,7 +128,10 @@ export default async function DashboardPage() {
         <div className="bg-green-600 rounded-2xl p-6 mb-8 text-white text-center">
           <Trophy className="h-10 w-10 mx-auto mb-3 text-green-200" />
           <h2 className="text-xl font-bold mb-1">Training Complete!</h2>
-          <p className="text-green-100 text-sm">You have completed all {total} days of the Sales Academy.</p>
+          <p className="text-green-100 text-sm mb-4">You have completed all {total} days of the Sales Academy.</p>
+          <Link href="/certificate" className="inline-flex items-center gap-2 bg-white text-green-700 font-semibold text-sm px-5 py-2.5 rounded-lg hover:bg-green-50 transition-colors">
+            🏆 View Certificate
+          </Link>
         </div>
       ) : (
         <div className="bg-red-600 rounded-2xl p-6 mb-8 text-white">

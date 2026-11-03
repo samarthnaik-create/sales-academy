@@ -27,7 +27,7 @@ function isUnlocked(courseId: string, dayNumber: number, progressMap: Record<str
   const prev = courses.find(c => c.dayNumber === dayNumber - 1)
   if (!prev) return false
   const pp = progressMap[prev.id]
-  return !!(pp?.completed && pp.score >= 80)
+  return !!(pp?.completed && pp.score >= 90)
 }
 
 export function CourseSearch({ courses, progressMap }: Props) {
