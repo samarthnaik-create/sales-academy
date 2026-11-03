@@ -4,8 +4,19 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight, CheckCircle2, FileQuestion, BookOpen, FolderOpen, StickyNote, X, PenLine } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-interface Module { title: string; html: string }
+interface VideoEntry { title: string; url: string }
+interface Module { title: string; html: string; videos?: VideoEntry[] }
 interface TopicGroup { title: string; modules: Module[] }
+
+function getEmbedUrl(url: string): string | null {
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`
+  const vimeo = url.match(/vimeo\.com\/(\d+)/)
+  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`
+  const drive = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/)
+  if (drive) return `https://drive.google.com/file/d/${drive[1]}/preview`
+  return null
+}
 
 interface Props {
   content: string
@@ -217,11 +228,35 @@ export function LessonViewer({ content, courseId, dayNumber, quizCount, complete
           </div>
         )}
 
+        {/* Module videos */}
+        {(currentModule?.videos ?? []).filter(v => v.url.trim()).length > 0 && (
+          <div className="px-6 pt-5 space-y-4">
+            {(currentModule.videos ?? []).filter(v => v.url.trim()).map((v, i) => {
+              const embedUrl = getEmbedUrl(v.url)
+              return embedUrl ? (
+                <div key={i}>
+                  {v.title && <p className="text-xs font-semibold text-zinc-500 mb-1.5">{v.title}</p>}
+                  <div className="bg-black rounded-xl overflow-hidden aspect-video">
+                    <iframe src={embedUrl} className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen />
+                  </div>
+                </div>
+              ) : (
+                <a key={i} href={v.url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-xs text-red-600 hover:underline">
+                  ▶ {v.title || 'Watch video'}
+                </a>
+              )
+            })}
+          </div>
+        )}
+
         {/* Content */}
         <div className="px-6 py-5">
           {currentModule?.html ? (
             <div
-              className="text-sm text-zinc-700 leading-relaxed [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-zinc-900 [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-zinc-800 [&_h3]:mt-3 [&_h3]:mb-1.5 [&_p]:mb-3 [&_p]:text-zinc-600 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ul]:space-y-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_ol]:space-y-1.5 [&_li]:text-zinc-600 [&_strong]:font-semibold [&_strong]:text-zinc-900 [&_em]:italic"
+              className="text-sm text-zinc-700 leading-relaxed [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-zinc-900 [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-zinc-800 [&_h3]:mt-3 [&_h3]:mb-1.5 [&_p]:mb-3 [&_p]:text-zinc-600 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ul]:space-y-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_ol]:space-y-1.5 [&_li]:text-zinc-600 [&_strong]:font-semibold [&_strong]:text-zinc-900 [&_em]:italic [&_a]:text-red-600 [&_a]:underline [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-2"
               dangerouslySetInnerHTML={{ __html: currentModule.html }}
             />
           ) : (

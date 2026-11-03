@@ -2,8 +2,9 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
-import { useEffect } from 'react'
-import { Bold, Italic, Heading2, Heading3, List, ListOrdered, Minus, Link2, Link2Off } from 'lucide-react'
+import Image from '@tiptap/extension-image'
+import { useEffect, useRef } from 'react'
+import { Bold, Italic, Heading2, Heading3, List, ListOrdered, Minus, Link2, Link2Off, ImagePlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -28,11 +29,23 @@ function ToolbarButton({ onClick, active, children, title }: { onClick: () => vo
   )
 }
 
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 export function RichTextEditor({ value, onChange, placeholder }: Props) {
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       Link.configure({ openOnClick: false, autolink: true, linkOnPaste: true }),
+      Image.configure({ allowBase64: true, inline: false }),
     ],
     content: value,
     onUpdate({ editor }) {
@@ -41,6 +54,33 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
     editorProps: {
       attributes: {
         class: 'prose prose-sm max-w-none min-h-[160px] px-4 py-3 text-zinc-700 focus:outline-none',
+      },
+      handlePaste(view, event) {
+        const items = Array.from(event.clipboardData?.items ?? [])
+        const imageItem = items.find(i => i.type.startsWith('image/'))
+        if (!imageItem) return false
+        event.preventDefault()
+        const blob = imageItem.getAsFile()
+        if (!blob) return false
+        readFileAsBase64(blob).then(src => {
+          view.dispatch(view.state.tr.replaceSelectionWith(
+            view.state.schema.nodes.image.create({ src })
+          ))
+        })
+        return true
+      },
+      handleDrop(view, event) {
+        const files = Array.from(event.dataTransfer?.files ?? [])
+        const imageFile = files.find(f => f.type.startsWith('image/'))
+        if (!imageFile) return false
+        event.preventDefault()
+        const coords = view.posAtCoords({ left: event.clientX, top: event.clientY })
+        if (!coords) return false
+        readFileAsBase64(imageFile).then(src => {
+          const node = view.state.schema.nodes.image.create({ src })
+          view.dispatch(view.state.tr.insert(coords.pos, node))
+        })
+        return true
       },
     },
     immediatelyRender: false,
@@ -56,8 +96,21 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
 
   if (!editor) return null
 
+  async function insertImageFromFile(file: File) {
+    if (!editor) return
+    const src = await readFileAsBase64(file)
+    editor.chain().focus().setImage({ src }).run()
+  }
+
   return (
     <div className="border border-zinc-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-red-500 focus-within:border-transparent">
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; if (f) insertImageFromFile(f); e.target.value = '' }}
+      />
       {/* Toolbar */}
       <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-zinc-100 bg-zinc-50 flex-wrap">
         <ToolbarButton title="Bold" onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')}>
@@ -85,6 +138,10 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
           <Minus className="h-3.5 w-3.5" />
         </ToolbarButton>
         <div className="w-px h-4 bg-zinc-200 mx-1" />
+        <div className="w-px h-4 bg-zinc-200 mx-1" />
+        <ToolbarButton title="Insert Image" onClick={() => imageInputRef.current?.click()}>
+          <ImagePlus className="h-3.5 w-3.5" />
+        </ToolbarButton>
         <ToolbarButton
           title="Add Link"
           active={editor.isActive('link')}
@@ -123,6 +180,8 @@ export function RichTextEditor({ value, onChange, placeholder }: Props) {
         .ProseMirror:focus { outline: none; }
         .ProseMirror a { color: #dc2626; text-decoration: underline; cursor: pointer; }
         .ProseMirror a:hover { color: #b91c1c; }
+        .ProseMirror img { max-width: 100%; height: auto; border-radius: 0.5rem; margin: 0.5rem 0; display: block; }
+        .ProseMirror img.ProseMirror-selectednode { outline: 2px solid #dc2626; border-radius: 0.5rem; }
       `}</style>
     </div>
   )

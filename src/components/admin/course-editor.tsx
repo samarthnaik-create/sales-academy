@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 
 interface Quiz { id?: string; question: string; options: string[]; answer: string; order: number }
-interface Module { title: string; html: string }
+interface Module { title: string; html: string; videos?: VideoEntry[] }
 interface TopicGroup { title: string; modules: Module[] }
 interface VideoEntry { title: string; url: string }
 interface Course { id: string; title: string; description: string | null; dayNumber: number; videoUrl: string | null; videos: string | null; content: string | null; aiTopup: boolean; quizzes: Quiz[] }
@@ -135,6 +135,13 @@ export function CourseEditor({ course }: { course: Course | null }) {
     const ti = activeTopic
     setTopics(prev => prev.map((t, i) =>
       i === ti ? { ...t, modules: t.modules.map((m, idx) => idx === mi ? { ...m, [field]: value } : m) } : t
+    ))
+  }
+
+  function updateModuleVideos(mi: number, videos: VideoEntry[]) {
+    const ti = activeTopic
+    setTopics(prev => prev.map((t, i) =>
+      i === ti ? { ...t, modules: t.modules.map((m, idx) => idx === mi ? { ...m, videos } : m) } : t
     ))
   }
 
@@ -433,6 +440,59 @@ export function CourseEditor({ course }: { course: Course | null }) {
                         onChange={val => updateModule(activeModule, 'html', val)}
                         placeholder="Type your lesson content here..."
                       />
+
+                      {/* Module videos */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2 mt-1">
+                          <label className="text-xs font-medium text-zinc-500">Videos in this module (optional)</label>
+                          <button
+                            type="button"
+                            onClick={() => updateModuleVideos(activeModule, [...(currentModule.videos ?? []), { title: '', url: '' }])}
+                            className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
+                          >
+                            <Plus className="h-3 w-3" /> Add Video
+                          </button>
+                        </div>
+                        {(currentModule.videos ?? []).length === 0 ? (
+                          <p className="text-[11px] text-zinc-400 py-1">No videos — click "Add Video" to embed YouTube, Vimeo or Google Drive</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {(currentModule.videos ?? []).map((v, vi) => (
+                              <div key={vi} className="flex gap-2 items-start">
+                                <div className="flex-1 grid grid-cols-3 gap-2">
+                                  <input
+                                    type="text"
+                                    value={v.title}
+                                    onChange={e => {
+                                      const updated = (currentModule.videos ?? []).map((x, idx) => idx === vi ? { ...x, title: e.target.value } : x)
+                                      updateModuleVideos(activeModule, updated)
+                                    }}
+                                    placeholder="Title (optional)"
+                                    className="px-2.5 py-1.5 border border-zinc-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                                  />
+                                  <input
+                                    type="url"
+                                    value={v.url}
+                                    onChange={e => {
+                                      const updated = (currentModule.videos ?? []).map((x, idx) => idx === vi ? { ...x, url: e.target.value } : x)
+                                      updateModuleVideos(activeModule, updated)
+                                    }}
+                                    placeholder="https://youtube.com/... or drive.google.com/..."
+                                    className="col-span-2 px-2.5 py-1.5 border border-zinc-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => updateModuleVideos(activeModule, (currentModule.videos ?? []).filter((_, idx) => idx !== vi))}
+                                  className="text-zinc-300 hover:text-red-500 transition-colors pt-1.5 shrink-0"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
