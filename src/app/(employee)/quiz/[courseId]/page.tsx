@@ -19,25 +19,19 @@ export default async function QuizPage({ params }: Props) {
   const courseDoc = await Course.findById(courseId).lean()
   if (!courseDoc) notFound()
 
-  const quizDocs = await Quiz.find({ courseId }).sort({ order: 1 }).lean()
-  const quizzes = quizDocs.map(q => ({
+  // Never select `answer` here — everything below is serialized to the client
+  const quizDocs = await Quiz.find({ courseId }, { question: 1, options: 1, order: 1 }).sort({ order: 1 }).lean()
+  const questions = quizDocs.map(q => ({
     id: String(q._id),
     question: q.question,
     options: q.options,
-    answer: q.answer,
-    order: q.order,
+    order_index: q.order,
   }))
 
   const course = {
     id: courseId,
     title: courseDoc.title,
-    description: courseDoc.description ?? null,
     dayNumber: courseDoc.dayNumber,
-    videoUrl: courseDoc.videoUrl ?? null,
-    videos: courseDoc.videos ?? null,
-    content: courseDoc.content ?? null,
-    aiTopup: courseDoc.aiTopup,
-    quizzes,
   }
 
   const [progressDoc, nextCourseDoc, accessible] = await Promise.all([
@@ -52,17 +46,20 @@ export default async function QuizPage({ params }: Props) {
   // AI top-up or pure AI — route through generate API (handles hybrid + shuffle)
   const safeProgress = progressDoc ? { attempts: progressDoc.attempts, score: progressDoc.score } : { attempts: 0, score: 0 }
 
-  if (course.aiTopup || course.quizzes.length === 0) {
+  if (courseDoc.aiTopup || questions.length === 0) {
     return <AiQuizStarter course={course} progress={safeProgress} userId={user.id} hasNextDay={hasNextDay} />
   }
 
-  // Pure manual questions — shuffle them here
-  const shuffled = [...course.quizzes].sort(() => Math.random() - 0.5)
+  const shuffled = [...questions]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
 
   return (
     <QuizEngine
       course={course}
-      questions={shuffled.map(q => ({ ...q, order_index: q.order }))}
+      questions={shuffled}
       progress={safeProgress}
       userId={user.id}
       hasNextDay={hasNextDay}

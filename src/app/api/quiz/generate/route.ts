@@ -18,6 +18,31 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
+interface ValidQuestion { question: string; options: string[]; answer: string; explanation: string }
+
+const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase()
+
+// Returns null unless the question is answerable: 4 distinct options and an answer that is one of them
+function validateQuestion(item: unknown): ValidQuestion | null {
+  if (!item || typeof item !== 'object') return null
+  const { question, options, answer, explanation } = item as Record<string, unknown>
+  if (typeof question !== 'string' || !question.trim()) return null
+  if (!Array.isArray(options) || options.length !== 4) return null
+  if (!options.every(o => typeof o === 'string' && o.trim())) return null
+  const opts = (options as string[]).map(o => o.trim())
+  if (new Set(opts.map(norm)).size !== 4) return null
+  if (typeof answer !== 'string') return null
+  // Snap near-miss answers (case/whitespace) to the exact option text so grading matches
+  const exact = opts.find(o => norm(o) === norm(answer))
+  if (!exact) return null
+  return {
+    question: question.trim(),
+    options: opts,
+    answer: exact,
+    explanation: typeof explanation === 'string' ? explanation.trim() : '',
+  }
+}
+
 export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -66,7 +91,10 @@ export async function POST(req: NextRequest) {
   if (!apiKey) return NextResponse.json({ error: 'AI not configured' }, { status: 500 })
 
   const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash',
+    generationConfig: { responseMimeType: 'application/json' },
+  })
 
   // Extract plain text — handles both flat [{title,html}] and hierarchical [{title,modules:[...]}]
   let plainContent = ''
@@ -98,12 +126,12 @@ export async function POST(req: NextRequest) {
   const lessonContent = plainContent ? `\n\nLESSON CONTENT:\n${plainContent}` : ''
 
   const alreadyHave = manualQuestions.length
-  const prompt = `You are a sales training expert creating a quiz for a sales team.
+  const buildPrompt = (count: number, avoid: string[]) => `You are a sales training expert creating a quiz for a sales team.
 
 Topic: "${course.title}"${course.description ? `\nDescription: ${course.description}` : ''}${lessonContent}
 
-${alreadyHave > 0 ? `The quiz already has ${alreadyHave} manual question${alreadyHave > 1 ? 's' : ''}. Generate ${needed} MORE questions that complement them — do not repeat any topics already covered.` : `Generate ${needed} multiple-choice questions.`}
-
+${alreadyHave > 0 ? `The quiz already has ${alreadyHave} manual question${alreadyHave > 1 ? 's' : ''}. Generate ${count} MORE questions that complement them — do not repeat any topics already covered.` : `Generate ${count} multiple-choice questions.`}
+${avoid.length ? `\nDo NOT repeat these questions:\n${avoid.map(q => `- ${q}`).join('\n')}\n` : ''}
 Questions must be:
 - Based STRICTLY on the lesson content provided (not generic sales knowledge)
 - Practical — test real-world application, not just definitions
@@ -111,22 +139,31 @@ Questions must be:
 - Clear and simple language
 
 Return ONLY valid JSON, no markdown:
-{"questions":[{"id":"q1","question":"...?","options":["Option A","Option B","Option C","Option D"],"answer":"Option A","explanation":"..."}]}
+{"questions":[{"question":"...?","options":["Option A","Option B","Option C","Option D"],"answer":"Option A","explanation":"..."}]}
 
 Strict rules:
-- Exactly ${needed} questions, ids q1 to q${needed}
-- Exactly 4 options per question
+- Exactly ${count} questions
+- Exactly 4 distinct options per question
 - "answer" must match one option EXACTLY word-for-word
 - "explanation" must explain WHY the answer is correct in 1-2 sentences`
 
   try {
-    const result = await model.generateContent(prompt)
-    const text = result.response.text().trim().replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    const parsed = JSON.parse(text)
-    const aiQuestions = parsed.questions as Array<{
-      id: string; question: string; options: string[]; answer: string; explanation: string
-    }>
-    if (!Array.isArray(aiQuestions) || !aiQuestions.length) throw new Error('Invalid AI response')
+    const valid: ValidQuestion[] = []
+    for (let attempt = 0; attempt < 2 && valid.length < needed; attempt++) {
+      const result = await model.generateContent(buildPrompt(needed - valid.length, valid.map(q => q.question)))
+      const text = result.response.text().trim().replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      let raw: unknown
+      try { raw = JSON.parse(text).questions } catch { continue }
+      if (!Array.isArray(raw)) continue
+      for (const item of raw) {
+        const q = validateQuestion(item)
+        if (q && !valid.some(v => v.question === q.question)) valid.push(q)
+        if (valid.length === needed) break
+      }
+    }
+    if (valid.length === 0) throw new Error('No valid AI questions')
+
+    const aiQuestions = valid.map((q, i) => ({ ...q, id: `ai-${i + 1}` }))
 
     // Store AI answers
     for (const q of aiQuestions) {
