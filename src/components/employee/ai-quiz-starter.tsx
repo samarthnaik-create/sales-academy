@@ -87,7 +87,7 @@ export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNex
         </div>
         <h2 className="text-xl font-bold text-zinc-900 mb-2">AI-Generated Quiz</h2>
         <p className="text-zinc-500 text-sm mb-1">Gemini AI will generate <strong>{totalQuestions} unique questions</strong> just for you.</p>
-        <p className="text-zinc-400 text-xs mb-1">40 seconds per question · Pass 90% to unlock the next day</p>
+        <p className="text-zinc-400 text-xs mb-1">Pass 90% to unlock the next day</p>
         <p className="text-zinc-400 text-xs mb-8">Every attempt gives different questions — no two employees see the same quiz.</p>
 
         {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg mb-4">{error}</div>}
