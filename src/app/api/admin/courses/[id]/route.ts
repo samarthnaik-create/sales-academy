@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { connectDB } from '@/lib/mongoose'
 import { Course } from '@/models/Course'
+import { clampQuestionCount } from '@/lib/quiz-config'
 import { Quiz } from '@/models/Quiz'
 
 interface Props { params: Promise<{ id: string }> }
@@ -9,7 +10,7 @@ interface Props { params: Promise<{ id: string }> }
 export async function PUT(req: NextRequest, { params }: Props) {
   try { await requireAdmin() } catch { return NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   const { id } = await params
-  const { title, description, dayNumber, videoUrl, videos, content, quizzes, aiTopup } = await req.json()
+  const { title, description, dayNumber, videoUrl, videos, content, quizzes, aiTopup, questionCount } = await req.json()
 
   await connectDB()
 
@@ -22,6 +23,7 @@ export async function PUT(req: NextRequest, { params }: Props) {
     videos: videos || undefined,
     content: content || undefined,
     aiTopup: !!aiTopup,
+    questionCount: clampQuestionCount(questionCount),
   })
 
   if (quizzes?.length) {

@@ -4,12 +4,13 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, Trash2, Upload, Loader2, ChevronLeft, ChevronRight, FolderOpen, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { MIN_QUESTIONS, MAX_QUESTIONS, DEFAULT_QUESTIONS, clampQuestionCount, suggestQuestionCount } from '@/lib/quiz-config'
 
 interface Quiz { id?: string; question: string; options: string[]; answer: string; order: number }
 interface Module { title: string; html: string; videos?: VideoEntry[] }
 interface TopicGroup { title: string; modules: Module[] }
 interface VideoEntry { title: string; url: string }
-interface Course { id: string; title: string; description: string | null; dayNumber: number; videoUrl: string | null; videos: string | null; content: string | null; aiTopup: boolean; quizzes: Quiz[] }
+interface Course { id: string; title: string; description: string | null; dayNumber: number; videoUrl: string | null; videos: string | null; content: string | null; aiTopup: boolean; questionCount: number; quizzes: Quiz[] }
 
 function parseVideos(raw: string | null, legacyUrl: string | null): VideoEntry[] {
   if (raw) {
@@ -46,6 +47,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
   const [activeModule, setActiveModule] = useState(0)
   const [quizzes, setQuizzes] = useState<Quiz[]>(course?.quizzes ?? [])
   const [aiTopup, setAiTopup] = useState<boolean>(course?.aiTopup ?? false)
+  const [questionCount, setQuestionCount] = useState<number>(course?.questionCount ?? DEFAULT_QUESTIONS)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([])
@@ -181,7 +183,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
     const res = await fetch(`/api/admin/courses${isNew ? '' : `/${course!.id}`}`, {
       method: isNew ? 'POST' : 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, content, quizzes, aiTopup, videos: JSON.stringify(validVideos) }),
+      body: JSON.stringify({ ...form, content, quizzes, aiTopup, questionCount: clampQuestionCount(questionCount), videos: JSON.stringify(validVideos) }),
     })
     const data = await res.json()
     setLoading(false)
@@ -198,6 +200,16 @@ export function CourseEditor({ course }: { course: Course | null }) {
   }
 
   const totalModules = topics.reduce((sum, t) => sum + t.modules.length, 0)
+  const wordCount = topics
+    .flatMap(t => t.modules)
+    .map(m => m.html.replace(/<[^>]+>/g, ' ').trim())
+    .join(' ')
+    .split(/\s+/)
+    .filter(Boolean).length
+  const suggestedCount = suggestQuestionCount(wordCount)
+  const effectiveCount = clampQuestionCount(questionCount)
+  const aiFill = Math.max(0, effectiveCount - quizzes.length)
+  const usesAi = aiTopup || quizzes.length === 0
 
   return (
     <div className="max-w-3xl">
@@ -518,12 +530,43 @@ export function CourseEditor({ course }: { course: Course | null }) {
             <div>
               <h2 className="font-semibold text-zinc-900">Quiz Questions</h2>
               <p className="text-xs text-zinc-400 mt-0.5">
-                {quizzes.length === 0 ? 'Leave empty — AI generates all 10 questions' : `${quizzes.length} manual question${quizzes.length > 1 ? 's' : ''} added`}
+                {quizzes.length === 0 ? `Leave empty — AI generates all ${effectiveCount} questions` : `${quizzes.length} manual question${quizzes.length > 1 ? 's' : ''} added`}
               </p>
             </div>
             <button type="button" onClick={addQuestion} className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 font-medium transition-colors">
               <Plus className="h-4 w-4" /> Add Question
             </button>
+          </div>
+
+          {/* Question count */}
+          <div className={`flex items-start justify-between gap-4 p-3 rounded-xl border border-zinc-200 mb-3 ${usesAi ? '' : 'opacity-60'}`}>
+            <div>
+              <p className="text-sm font-medium text-zinc-900">Number of questions</p>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                {usesAi
+                  ? `Total questions in this day's quiz (${MIN_QUESTIONS}–${MAX_QUESTIONS}). Manual questions count towards it.`
+                  : 'Only used when AI generates questions — tick the box below or remove manual questions.'}
+              </p>
+              {wordCount > 0 && (
+                <p className="text-xs text-zinc-400 mt-1">
+                  Content is ~{wordCount.toLocaleString()} words · suggested <strong className="text-zinc-600">{suggestedCount}</strong>
+                  {suggestedCount !== effectiveCount && (
+                    <button type="button" onClick={() => setQuestionCount(suggestedCount)} className="ml-2 text-red-600 hover:text-red-700 font-medium">
+                      Use {suggestedCount}
+                    </button>
+                  )}
+                </p>
+              )}
+            </div>
+            <input
+              type="number"
+              min={MIN_QUESTIONS}
+              max={MAX_QUESTIONS}
+              value={questionCount}
+              onChange={e => setQuestionCount(e.target.value === '' ? MIN_QUESTIONS : parseInt(e.target.value))}
+              onBlur={() => setQuestionCount(clampQuestionCount(questionCount))}
+              className="w-20 shrink-0 px-3 py-2 border border-zinc-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
           </div>
 
           {/* AI top-up checkbox */}
@@ -538,17 +581,17 @@ export function CourseEditor({ course }: { course: Course | null }) {
               <p className="text-sm font-medium text-zinc-900">Fill remaining questions with AI</p>
               <p className="text-xs text-zinc-500 mt-0.5">
                 {quizzes.length === 0
-                  ? 'AI will generate all 10 questions from the lesson content'
-                  : quizzes.length >= 10
-                  ? 'You already have 10 or more questions — AI top-up not needed'
-                  : `AI will generate ${10 - quizzes.length} more question${10 - quizzes.length > 1 ? 's' : ''} to reach a total of 10. All questions will be shuffled.`}
+                  ? `AI will generate all ${effectiveCount} questions from the lesson content`
+                  : aiFill === 0
+                  ? `You already have ${effectiveCount} or more questions — AI top-up not needed`
+                  : `AI will generate ${aiFill} more question${aiFill > 1 ? 's' : ''} to reach a total of ${effectiveCount}. All questions will be shuffled.`}
               </p>
             </div>
           </label>
 
           {quizzes.length === 0 && (
             <div className="text-center py-8 text-zinc-400 text-sm border-2 border-dashed border-zinc-200 rounded-xl">
-              No manual questions — {aiTopup ? 'AI will generate all 10' : 'add questions above or enable AI top-up'}
+              No manual questions — AI will generate all {effectiveCount}
             </div>
           )}
 

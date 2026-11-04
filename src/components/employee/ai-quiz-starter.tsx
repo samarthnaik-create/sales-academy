@@ -13,12 +13,13 @@ const RULES = [
 
 interface Props {
   course: { id: string; title: string; dayNumber: number }
+  totalQuestions: number
   progress: { attempts: number; score: number }
   userId: string
   hasNextDay?: boolean
 }
 
-export function AiQuizStarter({ course, progress, userId, hasNextDay }: Props) {
+export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNextDay }: Props) {
   const [accepted, setAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [questions, setQuestions] = useState<{ id: string; question: string; options: string[]; order_index: number }[] | null>(null)
@@ -85,7 +86,8 @@ export function AiQuizStarter({ course, progress, userId, hasNextDay }: Props) {
           <Sparkles className="h-7 w-7 text-white" />
         </div>
         <h2 className="text-xl font-bold text-zinc-900 mb-2">AI-Generated Quiz</h2>
-        <p className="text-zinc-500 text-sm mb-1">Gemini AI will generate <strong>10 unique questions</strong> just for you.</p>
+        <p className="text-zinc-500 text-sm mb-1">Gemini AI will generate <strong>{totalQuestions} unique questions</strong> just for you.</p>
+        <p className="text-zinc-400 text-xs mb-1">40 seconds per question · Pass 90% to unlock the next day</p>
         <p className="text-zinc-400 text-xs mb-8">Every attempt gives different questions — no two employees see the same quiz.</p>
 
         {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg mb-4">{error}</div>}
@@ -93,7 +95,7 @@ export function AiQuizStarter({ course, progress, userId, hasNextDay }: Props) {
         <button onClick={generate} disabled={loading} className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium px-6 py-2.5 rounded-lg text-sm flex items-center gap-2 mx-auto transition-colors">
           {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Generating…</> : <><Sparkles className="h-4 w-4" />Generate My Quiz</>}
         </button>
-        {loading && <p className="text-zinc-400 text-xs mt-3">This takes about 5–10 seconds…</p>}
+        {loading && <p className="text-zinc-400 text-xs mt-3">{totalQuestions > 15 ? 'This takes about 15–30 seconds…' : 'This takes about 5–10 seconds…'}</p>}
       </div>
     </div>
   )

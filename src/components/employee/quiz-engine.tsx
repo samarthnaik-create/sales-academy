@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 
 const PASS_THRESHOLD = 90
 const MAX_VIOLATIONS = 3
-const QUESTION_TIME = 30
+const QUESTION_TIME = 40
 
 const RULES = [
   'No switching tabs, no minimising, no second screens.',

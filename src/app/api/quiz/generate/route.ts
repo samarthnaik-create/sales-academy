@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { connectDB } from '@/lib/mongoose'
 import { Course } from '@/models/Course'
+import { clampQuestionCount } from '@/lib/quiz-config'
 import { Quiz } from '@/models/Quiz'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { storeSession } from '@/lib/ai-quiz-store'
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
   if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 })
 
   const manualQuestions = await Quiz.find({ courseId }).sort({ order: 1 }).lean()
-  const needed = Math.max(0, 10 - manualQuestions.length)
+  const needed = Math.max(0, clampQuestionCount(course.questionCount) - manualQuestions.length)
 
   // Build answers + explanations map starting with manual questions
   const answersMap: Record<string, string> = {}

@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { connectDB } from '@/lib/mongoose'
 import { Course } from '@/models/Course'
+import { clampQuestionCount } from '@/lib/quiz-config'
 import { Quiz } from '@/models/Quiz'
 import { Progress } from '@/models/Progress'
 
 export async function POST(req: NextRequest) {
   try { await requireAdmin() } catch { return NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
 
-  const { title, description, dayNumber, videoUrl, videos, content, quizzes, aiTopup } = await req.json()
+  const { title, description, dayNumber, videoUrl, videos, content, quizzes, aiTopup, questionCount } = await req.json()
   if (!title || !dayNumber) return NextResponse.json({ error: 'Title and day number required' }, { status: 400 })
 
   await connectDB()
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
     videos: videos || undefined,
     content: content || undefined,
     aiTopup: !!aiTopup,
+    questionCount: clampQuestionCount(questionCount),
   })
 
   if (quizzes?.length) {

@@ -32,6 +32,7 @@ export default async function CoursePage({ params }: Props) {
       videos: courseDoc.videos ?? null,
       content: courseDoc.content ?? null,
       aiTopup: courseDoc.aiTopup,
+      questionCount: courseDoc.questionCount ?? 10,
       quizzes: quizDocs.map(q => ({
         id: String(q._id),
         question: q.question,

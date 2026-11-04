@@ -1,6 +1,7 @@
 import { requireUser } from '@/lib/auth'
 import { connectDB } from '@/lib/mongoose'
 import { Course } from '@/models/Course'
+import { clampQuestionCount } from '@/lib/quiz-config'
 import { Quiz } from '@/models/Quiz'
 import { Progress } from '@/models/Progress'
 import { checkCourseAccess } from '@/lib/unlock'
@@ -47,7 +48,8 @@ export default async function QuizPage({ params }: Props) {
   const safeProgress = progressDoc ? { attempts: progressDoc.attempts, score: progressDoc.score } : { attempts: 0, score: 0 }
 
   if (courseDoc.aiTopup || questions.length === 0) {
-    return <AiQuizStarter course={course} progress={safeProgress} userId={user.id} hasNextDay={hasNextDay} />
+    const totalQuestions = Math.max(clampQuestionCount(courseDoc.questionCount), questions.length)
+    return <AiQuizStarter course={course} totalQuestions={totalQuestions} progress={safeProgress} userId={user.id} hasNextDay={hasNextDay} />
   }
 
   const shuffled = [...questions]
