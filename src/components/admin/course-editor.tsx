@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus, Trash2, Upload, Loader2, ChevronLeft, ChevronRight, FolderOpen, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
-import { MIN_QUESTIONS, MAX_QUESTIONS, DEFAULT_QUESTIONS, clampQuestionCount, suggestQuestionCount } from '@/lib/quiz-config'
+import { MIN_QUESTIONS, MAX_QUESTIONS, DEFAULT_QUESTIONS, clampQuestionCount } from '@/lib/quiz-config'
 
 interface Quiz { id?: string; question: string; options: string[]; answer: string; order: number }
 interface Module { title: string; html: string; videos?: VideoEntry[] }
@@ -200,13 +200,6 @@ export function CourseEditor({ course }: { course: Course | null }) {
   }
 
   const totalModules = topics.reduce((sum, t) => sum + t.modules.length, 0)
-  const wordCount = topics
-    .flatMap(t => t.modules)
-    .map(m => m.html.replace(/<[^>]+>/g, ' ').trim())
-    .join(' ')
-    .split(/\s+/)
-    .filter(Boolean).length
-  const suggestedCount = suggestQuestionCount(wordCount)
   const effectiveCount = clampQuestionCount(questionCount)
   const aiFill = Math.max(0, effectiveCount - quizzes.length)
   const usesAi = aiTopup || quizzes.length === 0
@@ -547,16 +540,6 @@ export function CourseEditor({ course }: { course: Course | null }) {
                   ? `Total questions in this day's quiz (${MIN_QUESTIONS}–${MAX_QUESTIONS}). Manual questions count towards it.`
                   : 'Only used when AI generates questions — tick the box below or remove manual questions.'}
               </p>
-              {wordCount > 0 && (
-                <p className="text-xs text-zinc-400 mt-1">
-                  Content is ~{wordCount.toLocaleString()} words · suggested <strong className="text-zinc-600">{suggestedCount}</strong>
-                  {suggestedCount !== effectiveCount && (
-                    <button type="button" onClick={() => setQuestionCount(suggestedCount)} className="ml-2 text-red-600 hover:text-red-700 font-medium">
-                      Use {suggestedCount}
-                    </button>
-                  )}
-                </p>
-              )}
             </div>
             <input
               type="number"
