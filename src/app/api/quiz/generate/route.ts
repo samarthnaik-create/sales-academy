@@ -150,7 +150,7 @@ Strict rules:
 
   try {
     const valid: ValidQuestion[] = []
-    for (let attempt = 0; attempt < 2 && valid.length < needed; attempt++) {
+    for (let attempt = 0; attempt < 3 && valid.length < needed; attempt++) {
       const result = await model.generateContent(buildPrompt(needed - valid.length, valid.map(q => q.question)))
       const text = result.response.text().trim().replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
       let raw: unknown
@@ -162,7 +162,8 @@ Strict rules:
         if (valid.length === needed) break
       }
     }
-    if (valid.length === 0) throw new Error('No valid AI questions')
+    // Never serve a short quiz — the admin set an exact count
+    if (valid.length < needed) throw new Error(`Only ${valid.length}/${needed} valid AI questions`)
 
     const aiQuestions = valid.map((q, i) => ({ ...q, id: `ai-${i + 1}` }))
 

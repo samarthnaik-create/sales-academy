@@ -545,8 +545,8 @@ export function CourseEditor({ course }: { course: Course | null }) {
               type="number"
               min={MIN_QUESTIONS}
               max={MAX_QUESTIONS}
-              value={questionCount}
-              onChange={e => setQuestionCount(e.target.value === '' ? MIN_QUESTIONS : parseInt(e.target.value))}
+              value={Number.isNaN(questionCount) ? '' : questionCount}
+              onChange={e => setQuestionCount(e.target.value === '' ? NaN : parseInt(e.target.value))}
               onBlur={() => setQuestionCount(clampQuestionCount(questionCount))}
               className="w-20 shrink-0 px-3 py-2 border border-zinc-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />

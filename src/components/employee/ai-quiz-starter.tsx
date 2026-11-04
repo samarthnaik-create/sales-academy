@@ -95,7 +95,7 @@ export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNex
         <button onClick={generate} disabled={loading} className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium px-6 py-2.5 rounded-lg text-sm flex items-center gap-2 mx-auto transition-colors">
           {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Generating…</> : <><Sparkles className="h-4 w-4" />Generate My Quiz</>}
         </button>
-        {loading && <p className="text-zinc-400 text-xs mt-3">{totalQuestions > 15 ? 'This takes about 15–30 seconds…' : 'This takes about 5–10 seconds…'}</p>}
+        {loading && <p className="text-zinc-400 text-xs mt-3">{totalQuestions > 20 ? 'This can take up to a minute…' : totalQuestions > 10 ? 'This takes about 15–30 seconds…' : 'This takes about 10–15 seconds…'}</p>}
       </div>
     </div>
   )
