@@ -1,15 +1,22 @@
-import { Resend } from 'resend'
+import nodemailer from 'nodemailer'
 import { formatDuration, WINDOW_HOURS } from '@/lib/quiz-window'
 
-// RESEND_API_KEY: Resend API key. EMAIL_FROM: verified sender, e.g. "Mohidin Sales Academy <training@mohidins.com>"
+// Sent through Google Workspace SMTP.
+// SMTP_USER: the Workspace account that signs in. SMTP_PASS: its 16-character app password.
+// EMAIL_FROM (optional): e.g. "Mohidin Sales Academy <training@mohidins.com>"; an alias must be set up
+// as "Send mail as" on that account, or Gmail rewrites it. Defaults to SMTP_USER.
 export function emailConfigured() {
-  return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM)
+  return Boolean(process.env.SMTP_USER && process.env.SMTP_PASS)
 }
 
 export async function sendEmail(to: string, subject: string, html: string) {
-  const resend = new Resend(process.env.RESEND_API_KEY)
-  const { error } = await resend.emails.send({ from: process.env.EMAIL_FROM!, to, subject, html })
-  if (error) throw new Error(`${error.name}: ${error.message}`)
+  const transport = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS?.replace(/\s/g, '') },
+  })
+  await transport.sendMail({ from: process.env.EMAIL_FROM || process.env.SMTP_USER, to, subject, html })
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
