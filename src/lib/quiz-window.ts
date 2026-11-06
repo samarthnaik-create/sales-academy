@@ -1,4 +1,4 @@
-export const WINDOW_HOURS = 24
+export const WINDOW_HOURS = 36
 const WINDOW_MS = WINDOW_HOURS * 60 * 60 * 1000
 
 export interface QuizWindow {
@@ -7,7 +7,7 @@ export interface QuizWindow {
   missed: number        // windows missed so far, including the current one if overdue
 }
 
-// Every quiz attempt (pass or fail) opens a fresh 24h window to attempt the next quiz.
+// Every quiz attempt (pass or fail) opens a fresh WINDOW_HOURS window to attempt the next quiz.
 // Windows stop once all days are completed. Missing a window is only flagged, never blocked.
 export function computeQuizWindow(attemptTimes: Date[], finishedAt: Date | null, now = new Date()): QuizWindow {
   let times = attemptTimes.map(t => new Date(t).getTime()).sort((a, b) => a - b)

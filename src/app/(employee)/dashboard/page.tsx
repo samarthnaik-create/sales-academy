@@ -78,7 +78,7 @@ export default async function DashboardPage() {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0
   const allDone = pct === 100 && total > 0
 
-  // 24h window to attempt the next quiz, restarted by every attempt
+  // WINDOW_HOURS window to attempt the next quiz, restarted by every attempt
   const quizWindow = computeQuizWindow(attempts.map(a => a.createdAt), trainingFinishedAt(progressList, total))
   const completedIds = new Set(progressList.filter(p => p.completed).map(p => String(p.courseId)))
   const nextDay = courses.find(c => !completedIds.has(String(c._id)))?.dayNumber
