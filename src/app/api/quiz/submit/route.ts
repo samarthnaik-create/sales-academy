@@ -58,7 +58,8 @@ export async function POST(req: NextRequest) {
   await Progress.findOneAndUpdate(
     { userId: session.user.id, courseId },
     {
-      $set: { score: bestScore, completed: passed, completedAt: passed ? new Date() : null },
+      // Failing a retake must not un-complete a day; completedAt keeps the first pass
+      $set: { score: bestScore, ...(passed && !existing?.completed ? { completed: true, completedAt: new Date() } : {}) },
       $inc: { attempts: 1 },
     },
     { upsert: true, new: true, setDefaultsOnInsert: true }

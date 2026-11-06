@@ -8,6 +8,7 @@ import { Progress } from '@/models/Progress'
 import { QuizAttempt } from '@/models/QuizAttempt'
 import { Certificate } from '@/models/Certificate'
 import { MAX_TAB_SWITCHES } from '@/lib/quiz-config'
+import { computeQuizWindow, trainingFinishedAt, formatDuration, WINDOW_HOURS } from '@/lib/quiz-window'
 import { Award, CheckCircle2, TrendingUp, Users, AlertCircle } from 'lucide-react'
 
 export default async function AnalyticsPage() {
@@ -79,6 +80,7 @@ export default async function AnalyticsPage() {
     const currentDay = empProgress.filter(p => p.unlocked).length
     const tabSwitches = empAttempts.reduce((s, a) => s + (a.tabSwitches ?? 0), 0)
     const autoSubmits = empAttempts.filter(a => (a.tabSwitches ?? 0) >= MAX_TAB_SWITCHES).length
+    const quizWindow = computeQuizWindow(empAttempts.map(a => a.createdAt), trainingFinishedAt(empProgress, totalCourses))
 
     return {
       emp: { id: empId, name: emp.name, username: emp.username, certificate: certByEmp[empId] ?? null },
@@ -91,6 +93,7 @@ export default async function AnalyticsPage() {
       attempts: empAttempts.length,
       tabSwitches,
       autoSubmits,
+      quizWindow,
     }
   })
 
@@ -123,7 +126,7 @@ export default async function AnalyticsPage() {
   const allScores = allAttempts.map(a => a.score)
   const overallAvgScore = allScores.length ? Math.round(allScores.reduce((s, n) => s + n, 0) / allScores.length) : 0
   const certificates = allCerts.length
-  const struggling = empStats.filter(e => e.pct < 50 && e.attempts > 0)
+  const overdue = empStats.filter(e => e.quizWindow.overdueMs > 0)
 
   const summaryCards = [
     { label: 'Total Employees', value: totalEmployees, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -164,16 +167,16 @@ export default async function AnalyticsPage() {
         ))}
       </div>
 
-      {/* Struggling employees alert */}
-      {struggling.length > 0 && (
+      {/* Overdue employees alert */}
+      {overdue.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 mb-6 flex items-start gap-3">
           <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-amber-800">
-              {struggling.length} employee{struggling.length > 1 ? 's' : ''} need attention
+              {overdue.length} employee{overdue.length > 1 ? 's' : ''} overdue
             </p>
             <p className="text-xs text-amber-700 mt-0.5">
-              {struggling.map(e => e.emp.name).join(', ')} — below 50% completion
+              {overdue.map(e => `${e.emp.name} (${formatDuration(e.quizWindow.overdueMs)} late)`).join(', ')} — no quiz attempt within {WINDOW_HOURS}h of their last one
             </p>
           </div>
         </div>
@@ -204,7 +207,7 @@ export default async function AnalyticsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-50">
-                {empStats.map(({ emp, completed, pct, avgScore, bestScore, lastAttempt, attempts, tabSwitches, autoSubmits }) => (
+                {empStats.map(({ emp, completed, pct, avgScore, bestScore, lastAttempt, attempts, tabSwitches, autoSubmits, quizWindow }) => (
                   <tr key={emp.id} className="hover:bg-zinc-50 transition-colors">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
@@ -253,12 +256,23 @@ export default async function AnalyticsPage() {
                         </span>
                       ) : attempts === 0 ? (
                         <span className="text-xs text-zinc-300">Not started</span>
-                      ) : pct < 50 ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-full">
-                          <AlertCircle className="h-3 w-3" /> Needs help
-                        </span>
+                      ) : quizWindow.overdueMs > 0 ? (
+                        <>
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 px-2 py-1 rounded-full whitespace-nowrap">
+                            <AlertCircle className="h-3 w-3" /> Overdue
+                          </span>
+                          <p className="text-xs text-red-500 mt-1 whitespace-nowrap">{formatDuration(quizWindow.overdueMs)} late</p>
+                        </>
                       ) : (
-                        <span className="text-xs text-blue-600 font-medium">In progress</span>
+                        <>
+                          <span className="text-xs text-blue-600 font-medium">In progress</span>
+                          {quizWindow.deadline && (
+                            <p className="text-xs text-zinc-400 mt-1 whitespace-nowrap">due in {formatDuration(quizWindow.deadline.getTime() - Date.now())}</p>
+                          )}
+                        </>
+                      )}
+                      {quizWindow.missed > 0 && (
+                        <p className="text-xs text-amber-600 mt-0.5 whitespace-nowrap">{quizWindow.missed} missed window{quizWindow.missed > 1 ? 's' : ''}</p>
                       )}
                     </td>
                   </tr>

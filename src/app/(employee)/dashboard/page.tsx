@@ -5,8 +5,10 @@ import { connectDB } from '@/lib/mongoose'
 import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
 import { Announcement } from '@/models/Announcement'
+import { QuizAttempt } from '@/models/QuizAttempt'
+import { computeQuizWindow, trainingFinishedAt, formatDuration, WINDOW_HOURS } from '@/lib/quiz-window'
 import Link from 'next/link'
-import { Trophy, ArrowRight } from 'lucide-react'
+import { Trophy, ArrowRight, Clock, AlertTriangle } from 'lucide-react'
 import { CourseSearch } from '@/components/employee/course-search'
 
 interface TopicGroup { title: string; modules: { title: string }[] }
@@ -35,7 +37,7 @@ export default async function DashboardPage() {
 
   await connectDB()
 
-  const [courses, progressList, announcements, resumeProgressDoc] = await Promise.all([
+  const [courses, progressList, announcements, resumeProgressDoc, attempts] = await Promise.all([
     Course.find().sort({ dayNumber: 1 }).lean(),
     Progress.find({ userId: user.id }).lean(),
     Announcement.find({
@@ -43,6 +45,7 @@ export default async function DashboardPage() {
     }).sort({ createdAt: -1 }).limit(3).lean(),
     Progress.findOne({ userId: user.id, lastVisited: { $ne: null } })
       .sort({ lastVisited: -1 }).lean(),
+    QuizAttempt.find({ userId: user.id }, { createdAt: 1 }).lean(),
   ])
 
   // Fetch resume course if we have a resume progress doc
@@ -74,6 +77,11 @@ export default async function DashboardPage() {
   const total = courses.length
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0
   const allDone = pct === 100 && total > 0
+
+  // 24h window to attempt the next quiz, restarted by every attempt
+  const quizWindow = computeQuizWindow(attempts.map(a => a.createdAt), trainingFinishedAt(progressList, total))
+  const completedIds = new Set(progressList.filter(p => p.completed).map(p => String(p.courseId)))
+  const nextDay = courses.find(c => !completedIds.has(String(c._id)))?.dayNumber
 
   // Resume info
   const resumePosition = resumeProgress
@@ -149,6 +157,27 @@ export default async function DashboardPage() {
             <div className="h-full bg-white rounded-full transition-all" style={{ width: `${pct}%` }} />
           </div>
         </div>
+      )}
+
+      {/* Quiz deadline */}
+      {!allDone && quizWindow.deadline && nextDay && (
+        quizWindow.overdueMs > 0 ? (
+          <Link href={`/day/${nextDay}`} className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-6 hover:bg-red-100 transition-colors">
+            <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-red-800">Day {nextDay} quiz is overdue by {formatDuration(quizWindow.overdueMs)}</p>
+              <p className="text-xs text-red-700 mt-0.5">Attempt it as soon as possible. Your admin can see missed deadlines.</p>
+            </div>
+          </Link>
+        ) : (
+          <Link href={`/day/${nextDay}`} className="flex items-start gap-3 bg-white border border-zinc-200 rounded-xl px-4 py-3 mb-6 hover:bg-zinc-50 transition-colors">
+            <Clock className="h-4 w-4 text-zinc-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-zinc-900">Attempt your Day {nextDay} quiz within {formatDuration(quizWindow.deadline.getTime() - Date.now())}</p>
+              <p className="text-xs text-zinc-500 mt-0.5">You have {WINDOW_HOURS} hours after each quiz attempt to attempt the next one. Passing or not, any attempt resets the clock.</p>
+            </div>
+          </Link>
+        )
       )}
 
       {total === 0 ? (
