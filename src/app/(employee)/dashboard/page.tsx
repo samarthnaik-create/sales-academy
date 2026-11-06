@@ -6,7 +6,7 @@ import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
 import { Announcement } from '@/models/Announcement'
 import { QuizAttempt } from '@/models/QuizAttempt'
-import { computeQuizWindow, trainingFinishedAt, formatDuration, WINDOW_HOURS } from '@/lib/quiz-window'
+import { computeQuizWindow, trainingFinishedAt, nextIncompleteDay, formatDuration, WINDOW_HOURS } from '@/lib/quiz-window'
 import Link from 'next/link'
 import { Trophy, ArrowRight, Clock, AlertTriangle } from 'lucide-react'
 import { CourseSearch } from '@/components/employee/course-search'
@@ -80,8 +80,7 @@ export default async function DashboardPage() {
 
   // WINDOW_HOURS window to attempt the next quiz, restarted by every attempt
   const quizWindow = computeQuizWindow(attempts.map(a => a.createdAt), trainingFinishedAt(progressList, total))
-  const completedIds = new Set(progressList.filter(p => p.completed).map(p => String(p.courseId)))
-  const nextDay = courses.find(c => !completedIds.has(String(c._id)))?.dayNumber
+  const nextDay = nextIncompleteDay(courses, progressList)
 
   // Resume info
   const resumePosition = resumeProgress

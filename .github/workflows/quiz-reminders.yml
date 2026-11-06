@@ -1,0 +1,21 @@
+# Hourly trigger for quiz deadline emails (Vercel Hobby crons can only run once a day).
+# Repo secrets needed: APP_URL (e.g. https://your-app.vercel.app) and CRON_SECRET (same value as on Vercel).
+name: Quiz reminder emails
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call reminder endpoint
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body -sS -m 90 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/cron/quiz-reminders"

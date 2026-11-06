@@ -1,4 +1,5 @@
 export const WINDOW_HOURS = 36
+export const WARNING_HOURS = 6 // reminder email this long before the deadline
 const WINDOW_MS = WINDOW_HOURS * 60 * 60 * 1000
 
 export interface QuizWindow {
@@ -32,6 +33,15 @@ export function trainingFinishedAt(progress: { completed: boolean; completedAt?:
   if (totalCourses === 0 || done.length < totalCourses) return null
   const times = done.map(p => (p.completedAt ? new Date(p.completedAt).getTime() : 0))
   return new Date(Math.max(...times))
+}
+
+// First day (by dayNumber) the employee hasn't completed yet
+export function nextIncompleteDay(
+  courses: { _id: unknown; dayNumber: number }[],
+  progress: { courseId: unknown; completed: boolean }[],
+): number | undefined {
+  const completedIds = new Set(progress.filter(p => p.completed).map(p => String(p.courseId)))
+  return [...courses].sort((a, b) => a.dayNumber - b.dayNumber).find(c => !completedIds.has(String(c._id)))?.dayNumber
 }
 
 export function formatDuration(ms: number): string {
