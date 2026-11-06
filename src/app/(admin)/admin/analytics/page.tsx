@@ -7,6 +7,7 @@ import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
 import { QuizAttempt } from '@/models/QuizAttempt'
 import { Certificate } from '@/models/Certificate'
+import { MAX_TAB_SWITCHES } from '@/lib/quiz-config'
 import { Award, CheckCircle2, TrendingUp, Users, AlertCircle } from 'lucide-react'
 
 export default async function AnalyticsPage() {
@@ -76,6 +77,8 @@ export default async function AnalyticsPage() {
     const bestScore = scores.length ? Math.max(...scores) : null
     const lastAttempt = empAttempts[0]?.createdAt ?? null
     const currentDay = empProgress.filter(p => p.unlocked).length
+    const tabSwitches = empAttempts.reduce((s, a) => s + (a.tabSwitches ?? 0), 0)
+    const autoSubmits = empAttempts.filter(a => (a.tabSwitches ?? 0) >= MAX_TAB_SWITCHES).length
 
     return {
       emp: { id: empId, name: emp.name, username: emp.username, certificate: certByEmp[empId] ?? null },
@@ -86,6 +89,8 @@ export default async function AnalyticsPage() {
       lastAttempt,
       currentDay,
       attempts: empAttempts.length,
+      tabSwitches,
+      autoSubmits,
     }
   })
 
@@ -193,12 +198,13 @@ export default async function AnalyticsPage() {
                   <th className="text-left px-5 py-3 font-medium text-zinc-500">Avg Score</th>
                   <th className="text-left px-5 py-3 font-medium text-zinc-500">Best Score</th>
                   <th className="text-left px-5 py-3 font-medium text-zinc-500">Attempts</th>
+                  <th className="text-left px-5 py-3 font-medium text-zinc-500">Tab Switches</th>
                   <th className="text-left px-5 py-3 font-medium text-zinc-500">Last Active</th>
                   <th className="text-left px-5 py-3 font-medium text-zinc-500">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-50">
-                {empStats.map(({ emp, completed, pct, avgScore, bestScore, lastAttempt, attempts }) => (
+                {empStats.map(({ emp, completed, pct, avgScore, bestScore, lastAttempt, attempts, tabSwitches, autoSubmits }) => (
                   <tr key={emp.id} className="hover:bg-zinc-50 transition-colors">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
@@ -229,6 +235,12 @@ export default async function AnalyticsPage() {
                       {bestScore !== null ? `${bestScore}%` : '—'}
                     </td>
                     <td className="px-5 py-3.5 text-zinc-500">{attempts}</td>
+                    <td className="px-5 py-3.5">
+                      <span className={tabSwitches > 0 ? 'font-semibold text-amber-600' : 'text-zinc-500'}>{tabSwitches}</span>
+                      {autoSubmits > 0 && (
+                        <p className="text-xs text-red-500 mt-0.5">{autoSubmits} auto-submitted</p>
+                      )}
+                    </td>
                     <td className="px-5 py-3.5 text-zinc-400 text-xs">{formatDate(lastAttempt)}</td>
                     <td className="px-5 py-3.5">
                       {emp.certificate ? (

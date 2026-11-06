@@ -4,17 +4,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle2, XCircle, Loader2, Trophy, ShieldAlert, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { MAX_TAB_SWITCHES as MAX_VIOLATIONS, QUIZ_RULES as RULES } from '@/lib/quiz-config'
 
 const PASS_THRESHOLD = 90
-const MAX_VIOLATIONS = 3
-
-const RULES = [
-  'No switching tabs, no minimising, no second screens.',
-  'No Google, no ChatGPT, no AI assistants, no notes.',
-  'Answer in your own words. The AI grader catches copy-paste.',
-  'Tab switches are detected, logged and shown to your admin.',
-  'Sit straight, focus on this screen only. This is your test.',
-]
 
 interface QuizQuestion {
   id: string
@@ -39,13 +31,16 @@ interface Props {
   userId: string
   sessionId?: string
   hasNextDay?: boolean
+  // AI quizzes: rules were already accepted, and a retry needs a freshly generated quiz
+  skipIntro?: boolean
+  onRetry?: () => void
 }
 
 type State = 'intro' | 'taking' | 'submitting' | 'result'
 
-export function QuizEngine({ course, questions, progress, sessionId, hasNextDay }: Props) {
+export function QuizEngine({ course, questions, progress, sessionId, hasNextDay, skipIntro, onRetry }: Props) {
   const router = useRouter()
-  const [state, setState] = useState<State>('intro')
+  const [state, setState] = useState<State>(skipIntro ? 'taking' : 'intro')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [result, setResult] = useState<QuizResult | null>(null)
@@ -56,7 +51,7 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay 
   const violationsRef = useRef(0)
   const lastViolationTime = useRef(0)
   const answersRef = useRef<Record<string, string>>({})
-  const stateRef = useRef<State>('intro')
+  const stateRef = useRef<State>(skipIntro ? 'taking' : 'intro')
 
   useEffect(() => { answersRef.current = answers }, [answers])
   useEffect(() => { stateRef.current = state }, [state])
@@ -223,7 +218,12 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay 
             </>
           ) : (
             <>
-              <button onClick={() => { setAnswers({}); setCurrentIndex(0); setState('intro'); setResult(null) }} className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Retry Quiz</button>
+              <button onClick={() => {
+                if (onRetry) return onRetry()
+                setAnswers({}); setCurrentIndex(0); setResult(null)
+                violationsRef.current = 0; setViolations(0); setShowWarning(false)
+                setState('intro')
+              }} className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Retry Quiz</button>
               <button onClick={() => router.push(`/day/${course.dayNumber}`)} className="border border-zinc-300 text-zinc-700 hover:bg-zinc-50 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Review Lesson</button>
             </>
           )}

@@ -14,7 +14,8 @@ export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { courseId, answers, sessionId } = await req.json() as { courseId: string; answers: Record<string, string>; sessionId?: string }
+  const { courseId, answers, sessionId, tabSwitches: rawSwitches } = await req.json() as { courseId: string; answers: Record<string, string>; sessionId?: string; tabSwitches?: unknown }
+  const tabSwitches = Math.min(100, Math.max(0, Math.round(Number(rawSwitches)) || 0))
 
   let correctAnswers: Record<string, string> = {}
   let explanations: Record<string, string> = {}
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
   const score = total > 0 ? Math.round((correctCount / total) * 100) : 0
   const passed = score >= PASS_THRESHOLD
 
-  await QuizAttempt.create({ userId: session.user.id, courseId, score, passed, answers })
+  await QuizAttempt.create({ userId: session.user.id, courseId, score, passed, answers, tabSwitches })
 
   const existing = await Progress.findOne({ userId: session.user.id, courseId }).lean()
   const bestScore = Math.max(score, existing?.score ?? 0)

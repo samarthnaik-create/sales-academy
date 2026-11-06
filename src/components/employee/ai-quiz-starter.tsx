@@ -2,14 +2,7 @@
 import { useState } from 'react'
 import { Sparkles, Loader2, ShieldAlert } from 'lucide-react'
 import { QuizEngine } from './quiz-engine'
-
-const RULES = [
-  'No switching tabs, no minimising, no second screens.',
-  'No Google, no ChatGPT, no AI assistants, no notes.',
-  'Answer in your own words. The AI grader catches copy-paste.',
-  'Tab switches are detected, logged and shown to your admin.',
-  'Sit straight, focus on this screen only. This is your test.',
-]
+import { QUIZ_RULES as RULES } from '@/lib/quiz-config'
 
 interface Props {
   course: { id: string; title: string; dayNumber: number }
@@ -47,7 +40,14 @@ export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNex
   }
 
   if (questions && sessionId) {
-    return <QuizEngine course={course} questions={questions} progress={progress} userId={userId} sessionId={sessionId} hasNextDay={hasNextDay} />
+    return (
+      <QuizEngine
+        course={course} questions={questions} progress={progress} userId={userId} sessionId={sessionId} hasNextDay={hasNextDay}
+        skipIntro
+        // The session is deleted on submit, so a retry must generate a new quiz
+        onRetry={() => { setQuestions(null); setSessionId(null); generate() }}
+      />
+    )
   }
 
   if (!accepted) {
