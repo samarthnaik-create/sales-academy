@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import mongoose from 'mongoose'
 import { getSession } from '@/lib/auth'
 import { connectDB } from '@/lib/mongoose'
 import { Quiz } from '@/models/Quiz'
@@ -14,8 +15,15 @@ export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { courseId, answers, sessionId, tabSwitches: rawSwitches } = await req.json() as { courseId: string; answers: Record<string, string>; sessionId?: string; tabSwitches?: unknown }
+  const { courseId, answers, sessionId, attemptId, tabSwitches: rawSwitches } = await req.json() as { courseId: string; answers: Record<string, string>; sessionId?: string; attemptId?: string; tabSwitches?: unknown }
   const tabSwitches = Math.min(100, Math.max(0, Math.round(Number(rawSwitches)) || 0))
+
+  // The attempt was recorded when the quiz started; it can be submitted only once
+  if (attemptId) {
+    await connectDB()
+    const open = mongoose.isValidObjectId(attemptId) && await QuizAttempt.exists({ _id: attemptId, userId: session.user.id, courseId, status: 'started' })
+    if (!open) return NextResponse.json({ error: 'This attempt was already submitted or is invalid' }, { status: 400 })
+  }
 
   let correctAnswers: Record<string, string> = {}
   let explanations: Record<string, string> = {}
@@ -51,7 +59,14 @@ export async function POST(req: NextRequest) {
   const score = total > 0 ? Math.round((correctCount / total) * 100) : 0
   const passed = score >= PASS_THRESHOLD
 
-  await QuizAttempt.create({ userId: session.user.id, courseId, score, passed, answers, tabSwitches })
+  const result = { score, passed, answers, tabSwitches, status: 'submitted', submittedAt: new Date() }
+  if (attemptId) {
+    const updated = await QuizAttempt.findOneAndUpdate({ _id: attemptId, status: 'started' }, { $set: result })
+    if (!updated) return NextResponse.json({ error: 'This attempt was already submitted' }, { status: 400 })
+  } else {
+    // Clients from before attempts were recorded at start
+    await QuizAttempt.create({ userId: session.user.id, courseId, ...result })
+  }
 
   const existing = await Progress.findOne({ userId: session.user.id, courseId }).lean()
   const bestScore = Math.max(score, existing?.score ?? 0)
@@ -60,7 +75,8 @@ export async function POST(req: NextRequest) {
     {
       // Failing a retake must not un-complete a day; completedAt keeps the first pass
       $set: { score: bestScore, ...(passed && !existing?.completed ? { completed: true, completedAt: new Date() } : {}) },
-      $inc: { attempts: 1 },
+      // Attempts are counted at start; only count here for old clients
+      ...(attemptId ? {} : { $inc: { attempts: 1 } }),
     },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   )

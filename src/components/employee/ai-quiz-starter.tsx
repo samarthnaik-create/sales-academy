@@ -17,6 +17,7 @@ export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNex
   const [loading, setLoading] = useState(false)
   const [questions, setQuestions] = useState<{ id: string; question: string; options: string[]; order_index: number }[] | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [attemptId, setAttemptId] = useState<string | undefined>()
   const [error, setError] = useState('')
 
   async function generate() {
@@ -32,6 +33,7 @@ export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNex
       if (!res.ok) throw new Error(data.error || 'Generation failed')
       setQuestions(data.questions)
       setSessionId(data.sessionId)
+      setAttemptId(data.attemptId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate quiz')
     } finally {
@@ -44,6 +46,7 @@ export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNex
       <QuizEngine
         course={course} questions={questions} progress={progress} userId={userId} sessionId={sessionId} hasNextDay={hasNextDay}
         skipIntro
+        attemptId={attemptId}
         // The session is deleted on submit, so a retry must generate a new quiz
         onRetry={() => { setQuestions(null); setSessionId(null); generate() }}
       />
@@ -88,7 +91,8 @@ export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNex
         <h2 className="text-xl font-bold text-zinc-900 mb-2">AI-Generated Quiz</h2>
         <p className="text-zinc-500 text-sm mb-1">Gemini AI will generate <strong>{totalQuestions} unique questions</strong> just for you.</p>
         <p className="text-zinc-400 text-xs mb-1">Pass 90% to unlock the next day</p>
-        <p className="text-zinc-400 text-xs mb-8">Every attempt gives different questions — no two employees see the same quiz.</p>
+        <p className="text-zinc-400 text-xs mb-1">Every attempt gives different questions — no two employees see the same quiz.</p>
+        <p className="text-zinc-400 text-xs mb-8">Generating counts as an attempt, even if you leave before submitting.</p>
 
         {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg mb-4">{error}</div>}
 

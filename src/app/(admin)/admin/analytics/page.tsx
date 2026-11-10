@@ -5,7 +5,7 @@ import { connectDB } from '@/lib/mongoose'
 import { User } from '@/models/User'
 import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
-import { QuizAttempt } from '@/models/QuizAttempt'
+import { QuizAttempt, isSubmitted } from '@/models/QuizAttempt'
 import { Certificate } from '@/models/Certificate'
 import Link from 'next/link'
 import { MAX_TAB_SWITCHES } from '@/lib/quiz-config'
@@ -74,7 +74,8 @@ export default async function AnalyticsPage() {
     const empAttempts = attemptsByEmp[empId] || []
     const completed = empProgress.filter(p => p.completed).length
     const pct = totalCourses > 0 ? Math.round((completed / totalCourses) * 100) : 0
-    const scores = empAttempts.map(a => a.score)
+    const scores = empAttempts.filter(isSubmitted).map(a => a.score)
+    const unfinished = empAttempts.length - scores.length
     const avgScore = scores.length ? Math.round(scores.reduce((s, n) => s + n, 0) / scores.length) : null
     const bestScore = scores.length ? Math.max(...scores) : null
     const lastAttempt = empAttempts[0]?.createdAt ?? null
@@ -92,6 +93,7 @@ export default async function AnalyticsPage() {
       lastAttempt,
       currentDay,
       attempts: empAttempts.length,
+      unfinished,
       tabSwitches,
       autoSubmits,
       quizWindow,
@@ -105,7 +107,8 @@ export default async function AnalyticsPage() {
     const progress = progressByCourse[courseId] || []
     const completions = progress.filter(p => p.completed).length
     const passedAttempts = attempts.filter(a => a.passed)
-    const avgScore = attempts.length ? Math.round(attempts.reduce((s, a) => s + a.score, 0) / attempts.length) : null
+    const submitted = attempts.filter(isSubmitted)
+    const avgScore = submitted.length ? Math.round(submitted.reduce((s, a) => s + a.score, 0) / submitted.length) : null
     const passRate = attempts.length ? Math.round((passedAttempts.length / attempts.length) * 100) : null
     const unlocked = progress.filter(p => p.unlocked).length
 
@@ -124,7 +127,7 @@ export default async function AnalyticsPage() {
   const overallPct = empStats.length
     ? Math.round(empStats.reduce((s, e) => s + e.pct, 0) / empStats.length)
     : 0
-  const allScores = allAttempts.map(a => a.score)
+  const allScores = allAttempts.filter(isSubmitted).map(a => a.score)
   const overallAvgScore = allScores.length ? Math.round(allScores.reduce((s, n) => s + n, 0) / allScores.length) : 0
   const certificates = allCerts.length
   const overdue = empStats.filter(e => e.quizWindow.overdueMs > 0)
@@ -208,7 +211,7 @@ export default async function AnalyticsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-50">
-                {empStats.map(({ emp, completed, pct, avgScore, bestScore, lastAttempt, attempts, tabSwitches, autoSubmits, quizWindow }) => (
+                {empStats.map(({ emp, completed, pct, avgScore, bestScore, lastAttempt, attempts, unfinished, tabSwitches, autoSubmits, quizWindow }) => (
                   <tr key={emp.id} className="hover:bg-zinc-50 transition-colors">
                     <td className="px-5 py-3.5">
                       <Link href={`/admin/analytics/${emp.id}`} className="flex items-center gap-2.5 group">
@@ -238,7 +241,10 @@ export default async function AnalyticsPage() {
                     <td className={`px-5 py-3.5 font-semibold ${scoreColor(bestScore)}`}>
                       {bestScore !== null ? `${bestScore}%` : '—'}
                     </td>
-                    <td className="px-5 py-3.5 text-zinc-500">{attempts}</td>
+                    <td className="px-5 py-3.5 text-zinc-500">
+                      {attempts}
+                      {unfinished > 0 && <p className="text-xs text-amber-600 whitespace-nowrap">{unfinished} not submitted</p>}
+                    </td>
                     <td className="px-5 py-3.5">
                       <span className={tabSwitches > 0 ? 'font-semibold text-amber-600' : 'text-zinc-500'}>{tabSwitches}</span>
                       {autoSubmits > 0 && (

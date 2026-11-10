@@ -34,11 +34,12 @@ interface Props {
   // AI quizzes: rules were already accepted, and a retry needs a freshly generated quiz
   skipIntro?: boolean
   onRetry?: () => void
+  attemptId?: string // AI quizzes: attempt already recorded by /api/quiz/generate
 }
 
 type State = 'intro' | 'taking' | 'submitting' | 'result'
 
-export function QuizEngine({ course, questions, progress, sessionId, hasNextDay, skipIntro, onRetry }: Props) {
+export function QuizEngine({ course, questions, progress, sessionId, hasNextDay, skipIntro, onRetry, attemptId: initialAttemptId }: Props) {
   const router = useRouter()
   const [state, setState] = useState<State>(skipIntro ? 'taking' : 'intro')
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -52,6 +53,30 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay,
   const lastViolationTime = useRef(0)
   const answersRef = useRef<Record<string, string>>({})
   const stateRef = useRef<State>(skipIntro ? 'taking' : 'intro')
+  const attemptIdRef = useRef<string | undefined>(initialAttemptId)
+  const [starting, setStarting] = useState(false)
+  const [startError, setStartError] = useState('')
+
+  // The attempt counts as soon as the questions are shown
+  async function start() {
+    setStarting(true)
+    setStartError('')
+    try {
+      const res = await fetch('/api/quiz/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId: course.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Could not start the quiz')
+      attemptIdRef.current = data.attemptId
+      setState('taking')
+    } catch (err) {
+      setStartError(err instanceof Error ? err.message : 'Could not start the quiz')
+    } finally {
+      setStarting(false)
+    }
+  }
 
   useEffect(() => { answersRef.current = answers }, [answers])
   useEffect(() => { stateRef.current = state }, [state])
@@ -66,7 +91,7 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay,
       const res = await fetch('/api/quiz/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ courseId: course.id, answers: currentAnswers, sessionId, tabSwitches }),
+        body: JSON.stringify({ courseId: course.id, answers: currentAnswers, sessionId, attemptId: attemptIdRef.current, tabSwitches }),
       })
       if (!res.ok) throw new Error()
       setResult(await res.json())
@@ -141,8 +166,10 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay,
               </li>
             ))}
           </ul>
-          <button onClick={() => setState('taking')} className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
-            I Understand — Start Quiz
+          <p className="text-xs text-zinc-400 mb-3">Starting counts as an attempt, even if you leave before submitting.</p>
+          {startError && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg mb-3">{startError}</div>}
+          <button onClick={start} disabled={starting} className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+            {starting ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting…</> : 'I Understand — Start Quiz'}
           </button>
         </div>
       </div>
@@ -222,6 +249,7 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay,
                 if (onRetry) return onRetry()
                 setAnswers({}); setCurrentIndex(0); setResult(null)
                 violationsRef.current = 0; setViolations(0); setShowWarning(false)
+                attemptIdRef.current = undefined
                 setState('intro')
               }} className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Retry Quiz</button>
               <button onClick={() => router.push(`/day/${course.dayNumber}`)} className="border border-zinc-300 text-zinc-700 hover:bg-zinc-50 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Review Lesson</button>

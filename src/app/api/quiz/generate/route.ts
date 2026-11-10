@@ -6,6 +6,7 @@ import { clampQuestionCount } from '@/lib/quiz-config'
 import { Quiz } from '@/models/Quiz'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { storeSession } from '@/lib/ai-quiz-store'
+import { startAttempt } from '@/lib/quiz-attempt'
 import { randomUUID } from 'crypto'
 
 export const maxDuration = 60
@@ -84,7 +85,8 @@ export async function POST(req: NextRequest) {
       explanations: explanationsMap,
       expiresAt: Date.now() + 2 * 60 * 60 * 1000,
     })
-    return NextResponse.json({ sessionId, questions: shuffle(manualForResponse) })
+    const attemptId = await startAttempt(session.user.id, courseId)
+    return NextResponse.json({ sessionId, attemptId, questions: shuffle(manualForResponse) })
   }
 
   // Need AI questions
@@ -189,9 +191,12 @@ Strict rules:
       expiresAt: Date.now() + 2 * 60 * 60 * 1000,
     })
 
+    const attemptId = await startAttempt(session.user.id, courseId)
+
     // Shuffle all questions together
     return NextResponse.json({
       sessionId,
+      attemptId,
       questions: shuffle([...manualForResponse, ...aiForResponse]),
     })
   } catch (err) {

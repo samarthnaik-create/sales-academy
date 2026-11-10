@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/auth'
 import { connectDB } from '@/lib/mongoose'
 import { User } from '@/models/User'
 import { Course } from '@/models/Course'
-import { QuizAttempt } from '@/models/QuizAttempt'
+import { QuizAttempt, isSubmitted } from '@/models/QuizAttempt'
 import { Certificate } from '@/models/Certificate'
 import Link from 'next/link'
 import { Users, BookOpen, CheckCircle2, Award } from 'lucide-react'
@@ -45,6 +45,7 @@ export default async function AdminPage() {
     id: String(a._id),
     score: a.score,
     passed: a.passed,
+    submitted: isSubmitted(a),
     user: userMap[String(a.userId)] ?? { name: 'Unknown' },
     course: courseMap[String(a.courseId)] ?? { title: 'Unknown', dayNumber: 0 },
   }))
@@ -82,10 +83,17 @@ export default async function AdminPage() {
                   <p className="text-sm font-medium text-zinc-900">{a.user.name}</p>
                   <p className="text-xs text-zinc-400">Day {a.course.dayNumber} · {a.course.title}</p>
                 </div>
-                <div className="text-right">
-                  <span className={`text-sm font-semibold ${a.passed ? 'text-green-600' : 'text-red-500'}`}>{a.score}%</span>
-                  <p className="text-xs text-zinc-400">{a.passed ? 'Passed' : 'Failed'}</p>
-                </div>
+                {a.submitted ? (
+                  <div className="text-right">
+                    <span className={`text-sm font-semibold ${a.passed ? 'text-green-600' : 'text-red-500'}`}>{a.score}%</span>
+                    <p className="text-xs text-zinc-400">{a.passed ? 'Passed' : 'Failed'}</p>
+                  </div>
+                ) : (
+                  <div className="text-right">
+                    <span className="text-sm font-semibold text-amber-600">—</span>
+                    <p className="text-xs text-zinc-400">Not submitted</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>

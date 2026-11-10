@@ -8,7 +8,7 @@ import { connectDB } from '@/lib/mongoose'
 import { User } from '@/models/User'
 import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
-import { QuizAttempt } from '@/models/QuizAttempt'
+import { QuizAttempt, isSubmitted } from '@/models/QuizAttempt'
 import { Certificate } from '@/models/Certificate'
 import { MAX_TAB_SWITCHES } from '@/lib/quiz-config'
 import {
@@ -43,7 +43,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
   const [courses, progressList, attempts, certificate] = await Promise.all([
     Course.find({}, { title: 1, dayNumber: 1 }).sort({ dayNumber: 1 }).lean(),
     Progress.find({ userId }).lean(),
-    QuizAttempt.find({ userId }, { courseId: 1, score: 1, passed: 1, tabSwitches: 1, createdAt: 1 }).sort({ createdAt: 1 }).lean(),
+    QuizAttempt.find({ userId }, { courseId: 1, score: 1, passed: 1, tabSwitches: 1, status: 1, createdAt: 1 }).sort({ createdAt: 1 }).lean(),
     Certificate.findOne({ userId }).lean(),
   ])
 
@@ -57,7 +57,8 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
 
   const completedCount = progressList.filter(p => p.completed).length
   const pct = totalCourses ? Math.round((completedCount / totalCourses) * 100) : 0
-  const scores = attempts.map(a => a.score)
+  const scores = attempts.filter(isSubmitted).map(a => a.score)
+  const unfinished = attempts.length - scores.length
   const avgScore = scores.length ? Math.round(scores.reduce((s, n) => s + n, 0) / scores.length) : null
   const tabSwitches = attempts.reduce((s, a) => s + (a.tabSwitches ?? 0), 0)
 
@@ -71,6 +72,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
     const completedOn = completed ? (p?.completedAt ?? dayAttempts[firstPass]?.createdAt ?? null) : null
     const unlocked = course.dayNumber === 1 || Boolean(p?.unlocked) || completed
     const lateAttempts = dayAttempts.filter(a => a.late > 0)
+    const daySubmitted = dayAttempts.filter(isSubmitted)
     return {
       id: cid,
       dayNumber: course.dayNumber,
@@ -81,7 +83,8 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
       firstAttempt: dayAttempts[0]?.createdAt ?? null,
       attempts: dayAttempts.length,
       passedOnAttempt: firstPass >= 0 ? firstPass + 1 : null,
-      bestScore: dayAttempts.length ? Math.max(...dayAttempts.map(a => a.score)) : null,
+      bestScore: daySubmitted.length ? Math.max(...daySubmitted.map(a => a.score)) : null,
+      unfinished: dayAttempts.length - daySubmitted.length,
       lateCount: lateAttempts.length,
       maxLate: Math.max(0, ...lateAttempts.map(a => a.late)),
       tabSwitches: dayAttempts.reduce((s, a) => s + (a.tabSwitches ?? 0), 0),
@@ -94,7 +97,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
   const cards = [
     { label: 'Days completed', value: `${completedCount}/${totalCourses}` },
     { label: 'Avg quiz score', value: avgScore !== null ? `${avgScore}%` : '—', color: scoreColor(avgScore) },
-    { label: 'Quiz attempts', value: attempts.length },
+    { label: unfinished ? `Quiz attempts (${unfinished} not submitted)` : 'Quiz attempts', value: attempts.length },
     { label: 'Missed windows', value: quizWindow.missed, color: quizWindow.missed ? 'text-amber-600' : undefined },
     { label: 'Tab switches', value: tabSwitches, color: tabSwitches ? 'text-amber-600' : undefined },
   ]
@@ -214,6 +217,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
                   <td className="px-5 py-3.5 text-zinc-500">
                     {d.attempts || '—'}
                     {d.passedOnAttempt && <p className="text-xs text-zinc-400 whitespace-nowrap">passed on #{d.passedOnAttempt}</p>}
+                    {d.unfinished > 0 && <p className="text-xs text-amber-600 whitespace-nowrap">{d.unfinished} not submitted</p>}
                     {d.tabSwitches > 0 && <p className="text-xs text-amber-600 whitespace-nowrap">{d.tabSwitches} tab switch{d.tabSwitches > 1 ? 'es' : ''}</p>}
                   </td>
                   <td className="px-5 py-3.5 text-xs whitespace-nowrap">
@@ -254,16 +258,28 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
                   <tr key={String(a._id)}>
                     <td className="px-5 py-3 text-xs text-zinc-500 whitespace-nowrap">{fmtDateTime(a.createdAt)}</td>
                     <td className="px-5 py-3 text-zinc-700 whitespace-nowrap">{a.course ? `Day ${a.course.dayNumber}` : 'Deleted day'}</td>
-                    <td className={`px-5 py-3 font-semibold ${scoreColor(a.score)}`}>{a.score}%</td>
-                    <td className="px-5 py-3">
-                      {a.passed
-                        ? <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">Passed</span>
-                        : <span className="text-xs font-medium text-red-700 bg-red-50 px-2 py-1 rounded-full">Failed</span>}
-                    </td>
-                    <td className="px-5 py-3 text-xs">
-                      <span className={(a.tabSwitches ?? 0) > 0 ? 'font-semibold text-amber-600' : 'text-zinc-400'}>{a.tabSwitches ?? 0}</span>
-                      {(a.tabSwitches ?? 0) >= MAX_TAB_SWITCHES && <span className="text-red-500 ml-1.5">auto-submitted</span>}
-                    </td>
+                    {isSubmitted(a) ? (
+                      <>
+                        <td className={`px-5 py-3 font-semibold ${scoreColor(a.score)}`}>{a.score}%</td>
+                        <td className="px-5 py-3">
+                          {a.passed
+                            ? <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">Passed</span>
+                            : <span className="text-xs font-medium text-red-700 bg-red-50 px-2 py-1 rounded-full">Failed</span>}
+                        </td>
+                        <td className="px-5 py-3 text-xs">
+                          <span className={(a.tabSwitches ?? 0) > 0 ? 'font-semibold text-amber-600' : 'text-zinc-400'}>{a.tabSwitches ?? 0}</span>
+                          {(a.tabSwitches ?? 0) >= MAX_TAB_SWITCHES && <span className="text-red-500 ml-1.5">auto-submitted</span>}
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-5 py-3 text-zinc-300">—</td>
+                        <td className="px-5 py-3">
+                          <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-full whitespace-nowrap">Not submitted</span>
+                        </td>
+                        <td className="px-5 py-3 text-xs text-zinc-300">—</td>
+                      </>
+                    )}
                     <td className="px-5 py-3 text-xs whitespace-nowrap">
                       {a.late > 0 ? <span className="text-red-500">{formatDuration(a.late)} late</span> : <span className="text-green-600">On time</span>}
                     </td>
