@@ -7,6 +7,7 @@ import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
 import { QuizAttempt } from '@/models/QuizAttempt'
 import { Certificate } from '@/models/Certificate'
+import Link from 'next/link'
 import { MAX_TAB_SWITCHES } from '@/lib/quiz-config'
 import { computeQuizWindow, trainingFinishedAt, formatDuration, WINDOW_HOURS } from '@/lib/quiz-window'
 import { Award, CheckCircle2, TrendingUp, Users, AlertCircle } from 'lucide-react'
@@ -186,7 +187,7 @@ export default async function AnalyticsPage() {
       <div className="bg-white rounded-xl border border-zinc-200 mb-6">
         <div className="px-5 py-4 border-b border-zinc-100">
           <h2 className="font-semibold text-zinc-900">Employee Progress</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">Per-employee completion, scores and activity</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Per-employee completion, scores and activity. Click a name for the full day-by-day report.</p>
         </div>
 
         {empStats.length === 0 ? (
@@ -210,15 +211,15 @@ export default async function AnalyticsPage() {
                 {empStats.map(({ emp, completed, pct, avgScore, bestScore, lastAttempt, attempts, tabSwitches, autoSubmits, quizWindow }) => (
                   <tr key={emp.id} className="hover:bg-zinc-50 transition-colors">
                     <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2.5">
+                      <Link href={`/admin/analytics/${emp.id}`} className="flex items-center gap-2.5 group">
                         <div className="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                          <span className="text-red-700 text-xs font-bold">{emp.name.charAt(0)}</span>
+                          <span className="text-red-700 text-xs font-bold">{emp.name.trim().charAt(0)}</span>
                         </div>
                         <div>
-                          <p className="font-medium text-zinc-900">{emp.name}</p>
+                          <p className="font-medium text-zinc-900 group-hover:text-red-600 group-hover:underline">{emp.name}</p>
                           <p className="text-xs text-zinc-400">@{emp.username}</p>
                         </div>
-                      </div>
+                      </Link>
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">

@@ -27,6 +27,18 @@ export function computeQuizWindow(attemptTimes: Date[], finishedAt: Date | null,
   return { deadline: new Date(deadline), overdueMs, missed }
 }
 
+// How late each attempt was against the window opened by the attempt before it (0 = on time).
+// Returned in the same order as the input; attempts after training was finished are never late.
+export function attemptLateness(attemptTimes: Date[], finishedAt: Date | null): number[] {
+  const order = attemptTimes.map((t, i) => ({ t: new Date(t).getTime(), i })).sort((a, b) => a.t - b.t)
+  const late = new Array<number>(attemptTimes.length).fill(0)
+  for (let k = 1; k < order.length; k++) {
+    if (finishedAt && order[k].t > finishedAt.getTime()) break
+    late[order[k].i] = Math.max(0, order[k].t - order[k - 1].t - WINDOW_MS)
+  }
+  return late
+}
+
 // Training is finished when every day is completed; returns when the last one was
 export function trainingFinishedAt(progress: { completed: boolean; completedAt?: Date | null }[], totalCourses: number): Date | null {
   const done = progress.filter(p => p.completed)
