@@ -5,5 +5,5 @@ export const proxy = withAuth({
 })
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/day/:path*', '/quiz/:path*', '/certificate/:path*', '/admin/:path*'],
+  matcher: ['/dashboard/:path*', '/day/:path*', '/quiz/:path*', '/admin/:path*'],
 }

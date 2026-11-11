@@ -5,9 +5,8 @@ import { connectDB } from '@/lib/mongoose'
 import { User } from '@/models/User'
 import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
-import { Certificate } from '@/models/Certificate'
 import { EmployeeActions } from '@/components/admin/employee-actions'
-import { CheckCircle2, Award } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 
 export default async function EmployeesPage() {
   await requireAdmin()
@@ -20,10 +19,7 @@ export default async function EmployeesPage() {
   ])
 
   const empIds = employeeDocs.map(e => e._id)
-  const [allProgress, allCerts] = await Promise.all([
-    Progress.find({ userId: { $in: empIds } }).lean(),
-    Certificate.find({ userId: { $in: empIds } }).lean(),
-  ])
+  const allProgress = await Progress.find({ userId: { $in: empIds } }).lean()
 
   const progressByEmp: Record<string, typeof allProgress> = {}
   for (const p of allProgress) {
@@ -32,15 +28,12 @@ export default async function EmployeesPage() {
     progressByEmp[uid].push(p)
   }
 
-  const certByEmp = Object.fromEntries(allCerts.map(c => [String(c.userId), c]))
-
   const employees = employeeDocs.map(emp => ({
     id: String(emp._id),
     name: emp.name,
     email: emp.email,
     username: emp.username,
     progress: progressByEmp[String(emp._id)] || [],
-    certificate: certByEmp[String(emp._id)] ?? null,
   }))
 
   return (
@@ -98,11 +91,7 @@ export default async function EmployeesPage() {
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
-                        {emp.certificate ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-full">
-                            <Award className="h-3 w-3" /> Certified
-                          </span>
-                        ) : pct === 100 ? (
+                        {pct === 100 ? (
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">
                             <CheckCircle2 className="h-3 w-3" /> Complete
                           </span>

@@ -5,27 +5,33 @@ import { connectDB } from '@/lib/mongoose'
 import { User } from '@/models/User'
 import { Course } from '@/models/Course'
 import { QuizAttempt, isSubmitted } from '@/models/QuizAttempt'
-import { Certificate } from '@/models/Certificate'
+import { Progress } from '@/models/Progress'
 import Link from 'next/link'
-import { Users, BookOpen, CheckCircle2, Award } from 'lucide-react'
+import { Users, BookOpen, CheckCircle2, Trophy } from 'lucide-react'
 
 export default async function AdminPage() {
   await requireAdmin()
 
   await connectDB()
 
-  const [employees, courses, passed, certs] = await Promise.all([
+  const [employees, courses, passed, employeeIds] = await Promise.all([
     User.countDocuments({ role: 'employee' }),
     Course.countDocuments(),
     QuizAttempt.countDocuments({ passed: true }),
-    Certificate.countDocuments(),
+    User.distinct('_id', { role: 'employee' }),
   ])
+  // Employees who have passed every day
+  const doneCounts = courses > 0 ? await Progress.aggregate([
+    { $match: { userId: { $in: employeeIds }, completed: true } },
+    { $group: { _id: '$userId', n: { $sum: 1 } } },
+    { $match: { n: { $gte: courses } } },
+  ]) : []
 
   const stats = [
     { label: 'Employees', value: employees, icon: Users, href: '/admin/employees' },
     { label: 'Courses', value: courses, icon: BookOpen, href: '/admin/courses' },
     { label: 'Quizzes Passed', value: passed, icon: CheckCircle2, href: '/admin/employees' },
-    { label: 'Certificates', value: certs, icon: Award, href: '/admin/employees' },
+    { label: 'Training Complete', value: doneCounts.length, icon: Trophy, href: '/admin/analytics' },
   ]
 
   const recentAttemptDocs = await QuizAttempt.find({}, { key: 0, explanations: 0, answers: 0 }).sort({ createdAt: -1 }).limit(10).lean()

@@ -9,12 +9,11 @@ import { User } from '@/models/User'
 import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
 import { QuizAttempt, isSubmitted } from '@/models/QuizAttempt'
-import { Certificate } from '@/models/Certificate'
 import { MAX_TAB_SWITCHES } from '@/lib/quiz-config'
 import {
   computeQuizWindow, trainingFinishedAt, nextIncompleteDay, attemptLateness, formatDuration, WINDOW_HOURS,
 } from '@/lib/quiz-window'
-import { ArrowLeft, AlertCircle, Award, CheckCircle2, Clock, Lock } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Trophy, CheckCircle2, Clock, Lock } from 'lucide-react'
 
 interface Props { params: Promise<{ userId: string }> }
 
@@ -40,11 +39,10 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
   const emp = await User.findOne({ _id: userId, role: 'employee' }).lean()
   if (!emp) notFound()
 
-  const [courses, progressList, attempts, certificate] = await Promise.all([
+  const [courses, progressList, attempts] = await Promise.all([
     Course.find({}, { title: 1, dayNumber: 1 }).sort({ dayNumber: 1 }).lean(),
     Progress.find({ userId }).lean(),
     QuizAttempt.find({ userId }, { courseId: 1, score: 1, passed: 1, tabSwitches: 1, status: 1, exited: 1, createdAt: 1 }).sort({ createdAt: 1 }).lean(),
-    Certificate.findOne({ userId }).lean(),
   ])
 
   const totalCourses = courses.length
@@ -126,11 +124,11 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
       </div>
 
       {/* Current status, same rules as the employee dashboard */}
-      {certificate || finishedAt ? (
+      {finishedAt ? (
         <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-6">
-          <Award className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
+          <Trophy className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
           <p className="text-sm font-semibold text-green-800">
-            Training complete{finishedAt ? ` on ${fmtDate(finishedAt)}` : ''}{certificate ? ' · certificate issued' : ''}
+            Training complete on {fmtDate(finishedAt)}
           </p>
         </div>
       ) : quizWindow.deadline && nextDay ? (

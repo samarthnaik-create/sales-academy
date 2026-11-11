@@ -3,7 +3,6 @@ import { connectDB } from '@/lib/mongoose'
 import { QuizAttempt } from '@/models/QuizAttempt'
 import { Progress } from '@/models/Progress'
 import { Course } from '@/models/Course'
-import { Certificate } from '@/models/Certificate'
 import { PASS_THRESHOLD } from '@/lib/quiz-config'
 
 type AnswerMap = Record<string, string>
@@ -113,22 +112,4 @@ async function recordResult(userId: string, courseId: string, score: number, pas
       )
     }
   }
-  await issueCertificateIfComplete(userId)
-}
-
-// Certificate once every day in the programme is passed (however many days there are)
-export async function issueCertificateIfComplete(userId: string): Promise<boolean> {
-  await connectDB()
-  const courses = await Course.find({}, { _id: 1 }).lean()
-  if (courses.length === 0) return false
-  const done = await Progress.find({ userId, completed: true, courseId: { $in: courses.map(c => c._id) } }, { completedAt: 1 }).lean()
-  if (done.length < courses.length) return !!(await Certificate.exists({ userId }))
-  // Dated the day the last day was passed
-  const finished = Math.max(...done.map(p => p.completedAt ? new Date(p.completedAt).getTime() : 0)) || Date.now()
-  await Certificate.findOneAndUpdate(
-    { userId },
-    { $setOnInsert: { completionDate: new Date(finished).toISOString().split('T')[0] } },
-    { upsert: true, returnDocument: 'after' }
-  )
-  return true
 }

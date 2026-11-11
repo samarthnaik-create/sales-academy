@@ -6,11 +6,10 @@ import { User } from '@/models/User'
 import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
 import { QuizAttempt, isSubmitted } from '@/models/QuizAttempt'
-import { Certificate } from '@/models/Certificate'
 import Link from 'next/link'
 import { MAX_TAB_SWITCHES } from '@/lib/quiz-config'
 import { computeQuizWindow, trainingFinishedAt, formatDuration, WINDOW_HOURS } from '@/lib/quiz-window'
-import { Award, CheckCircle2, TrendingUp, Users, AlertCircle } from 'lucide-react'
+import { Trophy, CheckCircle2, TrendingUp, Users, AlertCircle } from 'lucide-react'
 
 export default async function AnalyticsPage() {
   await requireAdmin()
@@ -25,10 +24,9 @@ export default async function AnalyticsPage() {
   const empIds = employeeDocs.map(e => e._id)
   const courseIds = courses.map(c => c._id)
 
-  const [allProgress, allAttempts, allCerts, courseAttempts, courseProgress] = await Promise.all([
+  const [allProgress, allAttempts, courseAttempts, courseProgress] = await Promise.all([
     Progress.find({ userId: { $in: empIds } }).lean(),
     QuizAttempt.find({ userId: { $in: empIds } }, { key: 0, explanations: 0, answers: 0 }).sort({ createdAt: -1 }).lean(),
-    Certificate.find({ userId: { $in: empIds } }).lean(),
     QuizAttempt.find({ courseId: { $in: courseIds } }, { key: 0, explanations: 0, answers: 0 }).lean(),
     Progress.find({ courseId: { $in: courseIds } }).lean(),
   ])
@@ -50,7 +48,6 @@ export default async function AnalyticsPage() {
     attemptsByEmp[uid].push(a)
   }
 
-  const certByEmp = Object.fromEntries(allCerts.map(c => [String(c.userId), c]))
 
   // Group by course
   const attemptsByCourse: Record<string, typeof courseAttempts> = {}
@@ -85,7 +82,7 @@ export default async function AnalyticsPage() {
     const quizWindow = computeQuizWindow(empAttempts.map(a => a.createdAt), trainingFinishedAt(empProgress, totalCourses))
 
     return {
-      emp: { id: empId, name: emp.name, username: emp.username, certificate: certByEmp[empId] ?? null },
+      emp: { id: empId, name: emp.name, username: emp.username,  },
       completed,
       pct,
       avgScore,
@@ -129,14 +126,14 @@ export default async function AnalyticsPage() {
     : 0
   const allScores = allAttempts.filter(isSubmitted).map(a => a.score)
   const overallAvgScore = allScores.length ? Math.round(allScores.reduce((s, n) => s + n, 0) / allScores.length) : 0
-  const certificates = allCerts.length
+  const finishedCount = empStats.filter(e => e.pct === 100).length
   const overdue = empStats.filter(e => e.quizWindow.overdueMs > 0)
 
   const summaryCards = [
     { label: 'Total Employees', value: totalEmployees, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'Avg Completion', value: `${overallPct}%`, icon: TrendingUp, color: 'text-red-600', bg: 'bg-red-50' },
     { label: 'Avg Quiz Score', value: allScores.length ? `${overallAvgScore}%` : '—', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Certified', value: certificates, icon: Award, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: 'Training Complete', value: finishedCount, icon: Trophy, color: 'text-amber-600', bg: 'bg-amber-50' },
   ]
 
   function scoreColor(score: number | null) {
@@ -253,11 +250,7 @@ export default async function AnalyticsPage() {
                     </td>
                     <td className="px-5 py-3.5 text-zinc-400 text-xs">{formatDate(lastAttempt)}</td>
                     <td className="px-5 py-3.5">
-                      {emp.certificate ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-full">
-                          <Award className="h-3 w-3" /> Certified
-                        </span>
-                      ) : pct === 100 ? (
+                      {pct === 100 ? (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">
                           <CheckCircle2 className="h-3 w-3" /> Complete
                         </span>

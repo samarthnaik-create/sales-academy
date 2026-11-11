@@ -4,7 +4,6 @@ import { connectDB } from '@/lib/mongoose'
 import { User } from '@/models/User'
 import { Progress } from '@/models/Progress'
 import { QuizAttempt } from '@/models/QuizAttempt'
-import { Certificate } from '@/models/Certificate'
 import { Note } from '@/models/Note'
 import { EmailLog } from '@/models/EmailLog'
 import { isId } from '@/lib/validate'
@@ -21,7 +20,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   await Promise.all([
     Progress.deleteMany({ userId: id }),
     QuizAttempt.deleteMany({ userId: id }),
-    Certificate.deleteMany({ userId: id }),
     Note.deleteMany({ userId: id }),
     EmailLog.deleteMany({ userId: id }),
   ])
