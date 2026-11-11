@@ -5,9 +5,7 @@ import { Course } from '@/models/Course'
 import { clampQuestionCount } from '@/lib/quiz-config'
 import { Quiz } from '@/models/Quiz'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { storeSession } from '@/lib/ai-quiz-store'
 import { startAttempt } from '@/lib/quiz-attempt'
-import { randomUUID } from 'crypto'
 
 export const maxDuration = 60
 
@@ -77,16 +75,8 @@ export async function POST(req: NextRequest) {
 
   // If we don't need AI questions, just shuffle and return
   if (needed === 0) {
-    const sessionId = randomUUID()
-    await storeSession(sessionId, {
-      courseId,
-      userId: session.user.id,
-      answers: answersMap,
-      explanations: explanationsMap,
-      expiresAt: Date.now() + 2 * 60 * 60 * 1000,
-    })
-    const attemptId = await startAttempt(session.user.id, courseId)
-    return NextResponse.json({ sessionId, attemptId, questions: shuffle(manualForResponse) })
+    const attemptId = await startAttempt(session.user.id, courseId, answersMap, explanationsMap)
+    return NextResponse.json({ attemptId, questions: shuffle(manualForResponse) })
   }
 
   // Need AI questions
@@ -182,20 +172,11 @@ Strict rules:
       order_index: manualQuestions.length + i,
     }))
 
-    const sessionId = randomUUID()
-    await storeSession(sessionId, {
-      courseId,
-      userId: session.user.id,
-      answers: answersMap,
-      explanations: explanationsMap,
-      expiresAt: Date.now() + 2 * 60 * 60 * 1000,
-    })
-
-    const attemptId = await startAttempt(session.user.id, courseId)
+    // The answer key lives on the attempt (server-side only)
+    const attemptId = await startAttempt(session.user.id, courseId, answersMap, explanationsMap)
 
     // Shuffle all questions together
     return NextResponse.json({
-      sessionId,
       attemptId,
       questions: shuffle([...manualForResponse, ...aiForResponse]),
     })

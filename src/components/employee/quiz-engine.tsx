@@ -1,12 +1,9 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { ArrowLeft, CheckCircle2, XCircle, Loader2, Trophy, ShieldAlert, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { MAX_TAB_SWITCHES as MAX_VIOLATIONS, QUIZ_RULES as RULES } from '@/lib/quiz-config'
-
-const PASS_THRESHOLD = 90
+import { MAX_TAB_SWITCHES as MAX_VIOLATIONS, QUIZ_RULES as RULES, PASS_THRESHOLD } from '@/lib/quiz-config'
 
 interface QuizQuestion {
   id: string
@@ -29,7 +26,6 @@ interface Props {
   questions: QuizQuestion[]
   progress: { attempts: number; score: number }
   userId: string
-  sessionId?: string
   hasNextDay?: boolean
   // AI quizzes: rules were already accepted, and a retry needs a freshly generated quiz
   skipIntro?: boolean
@@ -39,7 +35,7 @@ interface Props {
 
 type State = 'intro' | 'taking' | 'submitting' | 'result'
 
-export function QuizEngine({ course, questions, progress, sessionId, hasNextDay, skipIntro, onRetry, attemptId: initialAttemptId }: Props) {
+export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro, onRetry, attemptId: initialAttemptId }: Props) {
   const router = useRouter()
   const [state, setState] = useState<State>(skipIntro ? 'taking' : 'intro')
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -85,26 +81,96 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay,
   const total = questions.length
   const answeredCount = Object.keys(answers).length
 
-  async function doSubmit(currentAnswers: Record<string, string>, tabSwitches: number) {
+  const unanswered = questions.map((q, i) => (answers[q.id] ? -1 : i)).filter(i => i >= 0)
+  const [confirm, setConfirm] = useState<'unanswered' | 'leave' | null>(null)
+  const [submitError, setSubmitError] = useState('')
+  const finishedRef = useRef(false) // set once this attempt has been sent for scoring
+  const exitedRef = useRef(false)
+
+  async function doSubmit(currentAnswers: Record<string, string>, tabSwitches: number, exited = false) {
+    if (finishedRef.current) return
+    finishedRef.current = true
+    exitedRef.current = exited
+    setConfirm(null)
+    setSubmitError('')
     setState('submitting')
     try {
       const res = await fetch('/api/quiz/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ courseId: course.id, answers: currentAnswers, sessionId, attemptId: attemptIdRef.current, tabSwitches }),
+        body: JSON.stringify({ attemptId: attemptIdRef.current, answers: currentAnswers, tabSwitches, exited }),
       })
-      if (!res.ok) throw new Error()
-      setResult(await res.json())
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Could not submit the quiz')
+      setResult(data)
       setState('result')
-    } catch {
+    } catch (err) {
+      finishedRef.current = false
+      setSubmitError(err instanceof Error ? err.message : 'Could not submit the quiz')
       setState('taking')
     }
   }
 
-  async function submit() {
-    if (answeredCount < total) return
-    await doSubmit(answers, violationsRef.current)
+  // Unanswered questions get a warning first; submitting anyway scores what was answered
+  function submit() {
+    if (unanswered.length > 0) setConfirm('unanswered')
+    else doSubmit(answers, violationsRef.current)
   }
+
+  function selectAnswer(questionId: string, option: string) {
+    setAnswers(prev => {
+      const next = { ...prev, [questionId]: option }
+      answersRef.current = next
+      return next
+    })
+    scheduleSave()
+  }
+
+  // Save answers as they go, so leaving midway can still be scored
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  function scheduleSave() {
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      if (finishedRef.current || !attemptIdRef.current) return
+      fetch('/api/quiz/answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attemptId: attemptIdRef.current, answers: answersRef.current, tabSwitches: violationsRef.current }),
+        keepalive: true,
+      }).catch(() => {})
+    }, 600)
+  }
+
+  // Leaving without submitting (tab closed, refresh, navigating away) scores what was answered.
+  // sendBeacon survives the page unloading; the server ignores it if the attempt was already scored.
+  function exitQuiz() {
+    if (finishedRef.current || stateRef.current !== 'taking' || !attemptIdRef.current) return
+    finishedRef.current = true
+    const body = JSON.stringify({ attemptId: attemptIdRef.current, answers: answersRef.current, tabSwitches: violationsRef.current, exited: true })
+    navigator.sendBeacon('/api/quiz/submit', new Blob([body], { type: 'application/json' }))
+  }
+
+  useEffect(() => {
+    if (state !== 'taking') return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault() } // browser's "Leave site?" prompt
+    window.addEventListener('beforeunload', onBeforeUnload)
+    window.addEventListener('pagehide', exitQuiz)
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload)
+      window.removeEventListener('pagehide', exitQuiz)
+    }
+  }, [state]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // In-app navigation (sidebar links) unmounts the quiz. The deferred check skips React's
+  // dev-mode mount → unmount → remount, which would otherwise end the quiz instantly.
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      setTimeout(() => { if (!mountedRef.current) exitQuiz() }, 0)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Tab-switch detection — only active while quiz is being taken
   useEffect(() => {
@@ -120,6 +186,7 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay,
       const count = violationsRef.current
       setViolations(count)
       setShowWarning(true)
+      scheduleSave() // keep the server's tab-switch count current
 
       if (count >= MAX_VIOLATIONS) {
         // Auto-submit with whatever has been answered
@@ -188,6 +255,11 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay,
           <p className={passed ? 'text-green-100 text-sm' : 'text-red-100 text-sm'}>
             {passed ? 'You passed and unlocked the next day!' : `You need ${PASS_THRESHOLD}% to pass. Keep going!`}
           </p>
+          {Object.keys(answers).length < total && (
+            <p className={cn('text-xs mt-1', passed ? 'text-green-100' : 'text-red-100')}>
+              {exitedRef.current ? 'You left the quiz early. ' : ''}Scored on {Object.keys(answers).length} of {total} answered; unanswered questions count as wrong.
+            </p>
+          )}
           <div className="flex justify-center gap-8 mt-4">
             <div><p className="text-4xl font-bold">{score}%</p><p className="text-xs opacity-80 mt-0.5">Score</p></div>
             <div className="w-px bg-white/30" />
@@ -207,6 +279,7 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay,
                 <div className="flex items-start gap-2 mb-3">
                   {ok ? <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0 mt-0.5" /> : <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />}
                   <p className="font-semibold text-sm text-zinc-900">Q{i + 1}. {q.question}</p>
+                  {!userAns && <span className="ml-auto shrink-0 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">Not answered</span>}
                 </div>
                 <div className="space-y-2 mb-3 ml-7">
                   {q.options.map((opt, oi) => {
@@ -249,7 +322,7 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay,
                 if (onRetry) return onRetry()
                 setAnswers({}); setCurrentIndex(0); setResult(null)
                 violationsRef.current = 0; setViolations(0); setShowWarning(false)
-                attemptIdRef.current = undefined
+                attemptIdRef.current = undefined; finishedRef.current = false; exitedRef.current = false
                 setState('intro')
               }} className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Retry Quiz</button>
               <button onClick={() => router.push(`/day/${course.dayNumber}`)} className="border border-zinc-300 text-zinc-700 hover:bg-zinc-50 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Review Lesson</button>
@@ -312,10 +385,54 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay,
         </div>
       )}
 
+      {/* Submit with unanswered questions / leave the quiz */}
+      {confirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl border-2 border-amber-400 shadow-2xl p-7 max-w-sm mx-4 text-center">
+            <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="h-7 w-7 text-amber-600" />
+            </div>
+            {confirm === 'unanswered' ? (
+              <>
+                <h3 className="text-lg font-bold text-zinc-900 mb-1">
+                  {unanswered.length} question{unanswered.length > 1 ? 's' : ''} not answered
+                </h3>
+                <p className="text-sm text-zinc-500 mb-4">Unanswered questions count as wrong. Tap one to go back to it.</p>
+                <div className="flex flex-wrap justify-center gap-1.5 mb-5">
+                  {unanswered.map(i => (
+                    <button key={i} onClick={() => { setCurrentIndex(i); setConfirm(null) }}
+                      className="min-w-9 h-8 px-2 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors">
+                      Q{i + 1}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-bold text-zinc-900 mb-1">Leave the quiz?</h3>
+                <p className="text-sm text-zinc-500 mb-5">
+                  Your quiz will be submitted now and scored on the {answeredCount} of {total} questions you answered. Unanswered questions count as wrong.
+                </p>
+              </>
+            )}
+            <div className="flex gap-2">
+              <button onClick={() => setConfirm(null)}
+                className="flex-1 border border-zinc-300 text-zinc-700 hover:bg-zinc-50 font-semibold py-2.5 rounded-lg text-sm transition-colors">
+                {confirm === 'unanswered' ? 'Go back' : 'Stay'}
+              </button>
+              <button onClick={() => doSubmit(answers, violationsRef.current, confirm === 'leave')}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors">
+                {confirm === 'unanswered' ? 'Submit anyway' : 'Leave & submit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-2 mb-6">
-        <Link href={`/day/${course.dayNumber}`} className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Back to Lesson
-        </Link>
+        <button onClick={() => setConfirm('leave')} className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Leave Quiz
+        </button>
         {violations > 0 && (
           <div className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
             <AlertTriangle className="h-3 w-3" />
@@ -345,7 +462,7 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay,
           {current.options.map((opt, i) => {
             const selected = answers[current.id] === opt
             return (
-              <button key={i} onClick={() => setAnswers(prev => ({ ...prev, [current.id]: opt }))}
+              <button key={i} onClick={() => selectAnswer(current.id, opt)}
                 className={cn('w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all',
                   selected ? 'border-blue-500 bg-blue-50 text-zinc-900' : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-700')}>
                 <span className={cn('inline-flex items-center justify-center w-6 h-6 rounded-full text-xs mr-3 shrink-0', selected ? 'bg-blue-600 text-white font-bold' : 'bg-zinc-100 text-zinc-500')}>
@@ -374,12 +491,16 @@ export function QuizEngine({ course, questions, progress, sessionId, hasNextDay,
 
         {currentIndex < total - 1
           ? <button onClick={() => setCurrentIndex(i => i + 1)} className="text-sm text-zinc-500 hover:text-zinc-900 border border-zinc-200 px-4 py-2 rounded-lg transition-colors">Next →</button>
-          : <button onClick={submit} disabled={state === 'submitting' || answeredCount < total}
+          : <button onClick={submit} disabled={state === 'submitting'}
               className="text-sm font-medium bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
               {state === 'submitting' ? <><Loader2 className="h-4 w-4 animate-spin" />Submitting…</> : 'Submit Quiz'}
             </button>
         }
       </div>
+
+      {submitError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg mt-4 text-center">{submitError}</div>
+      )}
 
       {progress.attempts > 0 && (
         <p className="text-center text-zinc-400 text-xs mt-4">Previous best: {progress.score}% · Attempt #{progress.attempts + 1}</p>

@@ -7,6 +7,7 @@ import { QuizAttempt } from '@/models/QuizAttempt'
 import { EmailLog } from '@/models/EmailLog'
 import { computeQuizWindow, trainingFinishedAt, nextIncompleteDay, WARNING_HOURS } from '@/lib/quiz-window'
 import { emailConfigured, sendEmail, quizWarningEmail, quizOverdueEmail } from '@/lib/email'
+import { finalizeOpenAttempts } from '@/lib/quiz-attempt'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -19,9 +20,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const dry = req.nextUrl.searchParams.get('dry') === '1'
-  if (!dry && !emailConfigured()) return NextResponse.json({ error: 'Email not configured' }, { status: 500 })
-
   await connectDB()
+  // Score quizzes left open for over 2 hours (closed tab where the leave signal never arrived)
+  const finalized = dry ? 0 : await finalizeOpenAttempts({ startedBefore: new Date(Date.now() - 2 * 60 * 60 * 1000) })
+
+  if (!dry && !emailConfigured()) return NextResponse.json({ error: 'Email not configured', finalized }, { status: 500 })
+
   const [employees, courses, allProgress, allAttempts] = await Promise.all([
     User.find({ role: 'employee' }, { name: 1, email: 1 }).lean(),
     Course.find({}, { dayNumber: 1 }).lean(),
@@ -71,5 +75,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ dry, at: now.toISOString(), checked: employees.length, results })
+  return NextResponse.json({ dry, at: now.toISOString(), finalized, checked: employees.length, results })
 }

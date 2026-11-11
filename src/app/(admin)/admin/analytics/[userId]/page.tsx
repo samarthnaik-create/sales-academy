@@ -43,7 +43,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
   const [courses, progressList, attempts, certificate] = await Promise.all([
     Course.find({}, { title: 1, dayNumber: 1 }).sort({ dayNumber: 1 }).lean(),
     Progress.find({ userId }).lean(),
-    QuizAttempt.find({ userId }, { courseId: 1, score: 1, passed: 1, tabSwitches: 1, status: 1, createdAt: 1 }).sort({ createdAt: 1 }).lean(),
+    QuizAttempt.find({ userId }, { courseId: 1, score: 1, passed: 1, tabSwitches: 1, status: 1, exited: 1, createdAt: 1 }).sort({ createdAt: 1 }).lean(),
     Certificate.findOne({ userId }).lean(),
   ])
 
@@ -265,6 +265,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
                           {a.passed
                             ? <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">Passed</span>
                             : <span className="text-xs font-medium text-red-700 bg-red-50 px-2 py-1 rounded-full">Failed</span>}
+                          {a.exited && <p className="text-xs text-amber-600 mt-1 whitespace-nowrap">left midway</p>}
                         </td>
                         <td className="px-5 py-3 text-xs">
                           <span className={(a.tabSwitches ?? 0) > 0 ? 'font-semibold text-amber-600' : 'text-zinc-400'}>{a.tabSwitches ?? 0}</span>

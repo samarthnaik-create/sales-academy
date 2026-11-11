@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 import { getSession } from '@/lib/auth'
 import { connectDB } from '@/lib/mongoose'
 import { Course } from '@/models/Course'
+import { Quiz } from '@/models/Quiz'
 import { startAttempt } from '@/lib/quiz-attempt'
 
 // Manual-question quizzes call this when the employee starts; AI quizzes start inside /api/quiz/generate
@@ -16,6 +17,10 @@ export async function POST(req: NextRequest) {
   await connectDB()
   if (!(await Course.exists({ _id: courseId }))) return NextResponse.json({ error: 'Course not found' }, { status: 404 })
 
-  const attemptId = await startAttempt(session.user.id, courseId)
+  const quizzes = await Quiz.find({ courseId }, { answer: 1 }).lean()
+  if (quizzes.length === 0) return NextResponse.json({ error: 'This quiz has no questions' }, { status: 400 })
+  const key = Object.fromEntries(quizzes.map(q => [String(q._id), q.answer]))
+
+  const attemptId = await startAttempt(session.user.id, courseId, key, {})
   return NextResponse.json({ attemptId })
 }

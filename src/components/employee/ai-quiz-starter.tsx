@@ -16,8 +16,7 @@ export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNex
   const [accepted, setAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [questions, setQuestions] = useState<{ id: string; question: string; options: string[]; order_index: number }[] | null>(null)
-  const [sessionId, setSessionId] = useState<string | null>(null)
-  const [attemptId, setAttemptId] = useState<string | undefined>()
+  const [attemptId, setAttemptId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   async function generate() {
@@ -32,7 +31,6 @@ export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNex
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Generation failed')
       setQuestions(data.questions)
-      setSessionId(data.sessionId)
       setAttemptId(data.attemptId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate quiz')
@@ -41,14 +39,14 @@ export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNex
     }
   }
 
-  if (questions && sessionId) {
+  if (questions && attemptId) {
     return (
       <QuizEngine
-        course={course} questions={questions} progress={progress} userId={userId} sessionId={sessionId} hasNextDay={hasNextDay}
+        course={course} questions={questions} progress={progress} userId={userId} hasNextDay={hasNextDay}
         skipIntro
         attemptId={attemptId}
-        // The session is deleted on submit, so a retry must generate a new quiz
-        onRetry={() => { setQuestions(null); setSessionId(null); generate() }}
+        // Each attempt gets freshly generated questions
+        onRetry={() => { setQuestions(null); setAttemptId(null); generate() }}
       />
     )
   }
