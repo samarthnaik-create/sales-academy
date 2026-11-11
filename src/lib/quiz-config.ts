@@ -1,7 +1,7 @@
 export const MIN_QUESTIONS = 5
 export const MAX_QUESTIONS = 30
 export const DEFAULT_QUESTIONS = 10
-export const MAX_TAB_SWITCHES = 4
+export const MAX_TAB_SWITCHES = 3
 export const PASS_THRESHOLD = 90
 
 export const QUIZ_RULES = [
