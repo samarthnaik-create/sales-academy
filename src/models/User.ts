@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose'
 export interface IUser extends Document {
   name: string; username: string; email: string; password: string; role: string; createdAt: Date
+  failedLogins?: number; lockUntil?: Date
 }
 const UserSchema = new Schema<IUser>({
   name: { type: String, required: true },
@@ -8,5 +9,7 @@ const UserSchema = new Schema<IUser>({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, default: 'employee' },
+  failedLogins: { type: Number, default: 0 },
+  lockUntil: Date,
 }, { timestamps: { createdAt: true, updatedAt: false } })
 export const User = mongoose.models.User || mongoose.model<IUser>('User', UserSchema)

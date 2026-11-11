@@ -30,7 +30,7 @@ export async function startAttempt(userId: string, courseId: string, key: Answer
   await Progress.findOneAndUpdate(
     { userId, courseId },
     { $inc: { attempts: 1 } },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
   )
   return String(attempt._id)
 }
@@ -98,26 +98,37 @@ async function recordResult(userId: string, courseId: string, score: number, pas
     { userId, courseId },
     // Failing a retake must not un-complete a day; completedAt keeps the first pass
     { $set: { score: Math.max(score, existing?.score ?? 0), ...(passed && !existing?.completed ? { completed: true, completedAt: new Date() } : {}) } },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
   )
   if (!passed) return
 
   const course = await Course.findById(courseId, { dayNumber: 1 }).lean()
-  if (course && course.dayNumber < 15) {
+  if (course) {
     const next = await Course.findOne({ dayNumber: course.dayNumber + 1 }, { _id: 1 }).lean()
     if (next) {
       await Progress.findOneAndUpdate(
         { userId, courseId: next._id },
         { $set: { unlocked: true } },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
+        { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
       )
     }
   }
-  if (course?.dayNumber === 15) {
-    await Certificate.findOneAndUpdate(
-      { userId },
-      { $setOnInsert: { completionDate: new Date().toISOString().split('T')[0] } },
-      { upsert: true, new: true }
-    )
-  }
+  await issueCertificateIfComplete(userId)
+}
+
+// Certificate once every day in the programme is passed (however many days there are)
+export async function issueCertificateIfComplete(userId: string): Promise<boolean> {
+  await connectDB()
+  const courses = await Course.find({}, { _id: 1 }).lean()
+  if (courses.length === 0) return false
+  const done = await Progress.find({ userId, completed: true, courseId: { $in: courses.map(c => c._id) } }, { completedAt: 1 }).lean()
+  if (done.length < courses.length) return !!(await Certificate.exists({ userId }))
+  // Dated the day the last day was passed
+  const finished = Math.max(...done.map(p => p.completedAt ? new Date(p.completedAt).getTime() : 0)) || Date.now()
+  await Certificate.findOneAndUpdate(
+    { userId },
+    { $setOnInsert: { completionDate: new Date(finished).toISOString().split('T')[0] } },
+    { upsert: true, returnDocument: 'after' }
+  )
+  return true
 }

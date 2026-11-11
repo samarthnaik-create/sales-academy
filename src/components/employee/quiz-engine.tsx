@@ -85,12 +85,11 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
   const [confirm, setConfirm] = useState<'unanswered' | 'leave' | null>(null)
   const [submitError, setSubmitError] = useState('')
   const finishedRef = useRef(false) // set once this attempt has been sent for scoring
-  const exitedRef = useRef(false)
+  const [leftEarly, setLeftEarly] = useState(false)
 
   async function doSubmit(currentAnswers: Record<string, string>, tabSwitches: number, exited = false) {
     if (finishedRef.current) return
     finishedRef.current = true
-    exitedRef.current = exited
     setConfirm(null)
     setSubmitError('')
     setState('submitting')
@@ -103,6 +102,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Could not submit the quiz')
       setResult(data)
+      setLeftEarly(exited)
       setState('result')
     } catch (err) {
       finishedRef.current = false
@@ -257,7 +257,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
           </p>
           {Object.keys(answers).length < total && (
             <p className={cn('text-xs mt-1', passed ? 'text-green-100' : 'text-red-100')}>
-              {exitedRef.current ? 'You left the quiz early. ' : ''}Scored on {Object.keys(answers).length} of {total} answered; unanswered questions count as wrong.
+              {leftEarly ? 'You left the quiz early. ' : ''}Scored on {Object.keys(answers).length} of {total} answered; unanswered questions count as wrong.
             </p>
           )}
           <div className="flex justify-center gap-8 mt-4">
@@ -322,7 +322,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
                 if (onRetry) return onRetry()
                 setAnswers({}); setCurrentIndex(0); setResult(null)
                 violationsRef.current = 0; setViolations(0); setShowWarning(false)
-                attemptIdRef.current = undefined; finishedRef.current = false; exitedRef.current = false
+                attemptIdRef.current = undefined; finishedRef.current = false; setLeftEarly(false)
                 setState('intro')
               }} className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Retry Quiz</button>
               <button onClick={() => router.push(`/day/${course.dayNumber}`)} className="border border-zinc-300 text-zinc-700 hover:bg-zinc-50 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Review Lesson</button>

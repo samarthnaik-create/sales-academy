@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
@@ -24,7 +23,9 @@ export default function LoginPage() {
     })
     setLoading(false)
     if (res?.error) {
-      setError('Invalid email or password')
+      setError(res.error === 'locked'
+        ? 'Too many wrong passwords. This account is locked for 15 minutes.'
+        : 'Invalid email or password')
     } else {
       router.push('/')
       router.refresh()

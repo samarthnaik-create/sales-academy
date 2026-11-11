@@ -27,9 +27,9 @@ export default async function AnalyticsPage() {
 
   const [allProgress, allAttempts, allCerts, courseAttempts, courseProgress] = await Promise.all([
     Progress.find({ userId: { $in: empIds } }).lean(),
-    QuizAttempt.find({ userId: { $in: empIds } }).sort({ createdAt: -1 }).lean(),
+    QuizAttempt.find({ userId: { $in: empIds } }, { key: 0, explanations: 0, answers: 0 }).sort({ createdAt: -1 }).lean(),
     Certificate.find({ userId: { $in: empIds } }).lean(),
-    QuizAttempt.find({ courseId: { $in: courseIds } }).lean(),
+    QuizAttempt.find({ courseId: { $in: courseIds } }, { key: 0, explanations: 0, answers: 0 }).lean(),
     Progress.find({ courseId: { $in: courseIds } }).lean(),
   ])
 

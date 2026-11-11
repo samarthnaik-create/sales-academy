@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createHash, timingSafeEqual } from 'node:crypto'
 import { connectDB } from '@/lib/mongoose'
 import { User } from '@/models/User'
 import { Course } from '@/models/Course'
@@ -16,7 +17,8 @@ export const maxDuration = 60
 // Sends each employee at most one warning and one overdue email per quiz deadline. ?dry=1 previews without sending.
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET
-  if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
+  const digest = (v: string) => createHash('sha256').update(v).digest()
+  if (!secret || !timingSafeEqual(digest(req.headers.get('authorization') ?? ''), digest(`Bearer ${secret}`))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const dry = req.nextUrl.searchParams.get('dry') === '1'

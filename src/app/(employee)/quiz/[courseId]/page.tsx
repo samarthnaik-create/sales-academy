@@ -5,6 +5,7 @@ import { clampQuestionCount } from '@/lib/quiz-config'
 import { Quiz } from '@/models/Quiz'
 import { Progress } from '@/models/Progress'
 import { checkCourseAccess } from '@/lib/unlock'
+import { isId } from '@/lib/validate'
 import { notFound, redirect } from 'next/navigation'
 import { QuizEngine } from '@/components/employee/quiz-engine'
 import { AiQuizStarter } from '@/components/employee/ai-quiz-starter'
@@ -14,6 +15,7 @@ interface Props { params: Promise<{ courseId: string }> }
 export default async function QuizPage({ params }: Props) {
   const { courseId } = await params
   const user = await requireUser()
+  if (!isId(courseId)) notFound()
 
   await connectDB()
 

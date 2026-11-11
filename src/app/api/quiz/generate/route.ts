@@ -5,7 +5,13 @@ import { Course } from '@/models/Course'
 import { clampQuestionCount } from '@/lib/quiz-config'
 import { Quiz } from '@/models/Quiz'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import mongoose from 'mongoose'
 import { startAttempt } from '@/lib/quiz-attempt'
+import { checkCourseAccess } from '@/lib/unlock'
+import { QuizAttempt } from '@/models/QuizAttempt'
+
+// Each generate is a paid AI call and counts as an attempt; stop double-clicks and rapid retries
+const COOLDOWN_SECONDS = 20
 
 export const maxDuration = 60
 
@@ -48,11 +54,17 @@ export async function POST(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { courseId } = await req.json()
+  if (!mongoose.isValidObjectId(courseId)) return NextResponse.json({ error: 'Invalid course' }, { status: 400 })
 
   await connectDB()
 
   const course = await Course.findById(courseId).lean()
   if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 })
+  if (!(await checkCourseAccess(session.user.id, courseId, course.dayNumber))) {
+    return NextResponse.json({ error: 'This day is still locked' }, { status: 403 })
+  }
+  const recent = await QuizAttempt.exists({ userId: session.user.id, createdAt: { $gt: new Date(Date.now() - COOLDOWN_SECONDS * 1000) } })
+  if (recent) return NextResponse.json({ error: `Please wait ${COOLDOWN_SECONDS} seconds before starting another quiz` }, { status: 429 })
 
   const manualQuestions = await Quiz.find({ courseId }).sort({ order: 1 }).lean()
   const needed = Math.max(0, clampQuestionCount(course.questionCount) - manualQuestions.length)

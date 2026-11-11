@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { CheckCircle2, Lock, PlayCircle, Search, X } from 'lucide-react'
+import { PASS_THRESHOLD } from '@/lib/quiz-config'
 
 interface Course {
   id: string
@@ -27,7 +28,7 @@ function isUnlocked(courseId: string, dayNumber: number, progressMap: Record<str
   const prev = courses.find(c => c.dayNumber === dayNumber - 1)
   if (!prev) return false
   const pp = progressMap[prev.id]
-  return !!(pp?.completed && pp.score >= 90)
+  return !!(pp?.completed && pp.score >= PASS_THRESHOLD)
 }
 
 export function CourseSearch({ courses, progressMap }: Props) {

@@ -1,13 +1,14 @@
 import { connectDB } from '@/lib/mongoose'
 import { Progress } from '@/models/Progress'
 import { Course } from '@/models/Course'
+import { PASS_THRESHOLD } from '@/lib/quiz-config'
 
 /**
  * Returns true if an employee should have access to a course.
  * Access is granted if:
  *   - It's Day 1 (always open), OR
  *   - The Progress record has unlocked=true, OR
- *   - The employee passed (score ≥ 80, completed) the previous day's course
+ *   - The employee passed (score ≥ PASS_THRESHOLD, completed) the previous day's course
  *
  * When implicit access is detected via the third rule, the unlock record is
  * auto-written so future visits are instant — no manual DB fixes needed.
@@ -30,12 +31,12 @@ export async function checkCourseAccess(
 
   const prevProgress = await Progress.findOne({ userId, courseId: prevCourse._id }).lean()
 
-  if (prevProgress?.completed && prevProgress.score >= 90) {
+  if (prevProgress?.completed && prevProgress.score >= PASS_THRESHOLD) {
     // Auto-write so next visit doesn't need this check
     await Progress.findOneAndUpdate(
       { userId, courseId },
       { $set: { unlocked: true } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     )
     return true
   }
@@ -58,5 +59,5 @@ export function computeUnlocked(
   const prev = courses.find(c => c.dayNumber === dayNumber - 1)
   if (!prev) return false
   const pp = progressMap[prev.id]
-  return !!(pp?.completed && pp.score >= 90)
+  return !!(pp?.completed && pp.score >= PASS_THRESHOLD)
 }

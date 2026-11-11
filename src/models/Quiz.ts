@@ -9,4 +9,5 @@ const QuizSchema = new Schema<IQuiz>({
   answer: { type: String, required: true },
   order: { type: Number, default: 0 },
 })
+QuizSchema.index({ courseId: 1, order: 1 })
 export const Quiz = mongoose.models.Quiz || mongoose.model<IQuiz>('Quiz', QuizSchema)

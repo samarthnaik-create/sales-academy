@@ -28,7 +28,7 @@ export default async function AdminPage() {
     { label: 'Certificates', value: certs, icon: Award, href: '/admin/employees' },
   ]
 
-  const recentAttemptDocs = await QuizAttempt.find().sort({ createdAt: -1 }).limit(10).lean()
+  const recentAttemptDocs = await QuizAttempt.find({}, { key: 0, explanations: 0, answers: 0 }).sort({ createdAt: -1 }).limit(10).lean()
 
   // Fetch related user and course data
   const userIds = [...new Set(recentAttemptDocs.map(a => a.userId))]

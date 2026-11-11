@@ -34,7 +34,7 @@ export default async function CoursesPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Courses</h1>
-          <p className="text-zinc-500 text-sm mt-1">{courses.length} courses · 15 days total</p>
+          <p className="text-zinc-500 text-sm mt-1">{courses.length} {courses.length === 1 ? 'day' : 'days'} total</p>
         </div>
         <Link href="/admin/courses/new" className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
           <Plus className="h-4 w-4" /> Add Course

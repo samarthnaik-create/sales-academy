@@ -19,7 +19,9 @@ export default async function DayPage({ params }: Props) {
 
   await connectDB()
 
-  const courseDoc = await Course.findOne({ dayNumber: parseInt(dayNumber) }).lean()
+  const day = Number(dayNumber)
+  if (!Number.isInteger(day) || day < 1) notFound()
+  const courseDoc = await Course.findOne({ dayNumber: day }).lean()
   if (!courseDoc) notFound()
 
   const courseId = String(courseDoc._id)

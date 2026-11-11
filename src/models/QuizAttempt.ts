@@ -20,6 +20,8 @@ const QuizAttemptSchema = new Schema<IQuizAttempt>({
   key: Schema.Types.Mixed,
   explanations: Schema.Types.Mixed,
 }, { timestamps: { createdAt: true, updatedAt: false } })
+QuizAttemptSchema.index({ userId: 1, createdAt: -1 })
+QuizAttemptSchema.index({ status: 1, createdAt: 1 })
 export const QuizAttempt = mongoose.models.QuizAttempt || mongoose.model<IQuizAttempt>('QuizAttempt', QuizAttemptSchema)
 
 export const isSubmitted = (a: { status?: string }) => a.status !== 'started'
