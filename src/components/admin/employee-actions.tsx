@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { UserPlus, KeyRound, X, Trash2 } from 'lucide-react'
+import { UserPlus, KeyRound, X, Trash2, Eye, EyeOff } from 'lucide-react'
 
 type Mode = 'add' | 'reset'
 
@@ -20,11 +20,12 @@ export function EmployeeActions({ mode, employeeId, employeeName }: Props) {
   const [form, setForm] = useState({ name: '', username: '', email: '', password: '', role: 'employee' })
   // Reset password state
   const [newPassword, setNewPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   function setField(k: string, v: string) { setForm(p => ({ ...p, [k]: v })) }
 
   function openModal() { setOpen(true); setError(''); setSuccess('') }
-  function closeModal() { setOpen(false); setError(''); setSuccess(''); setNewPassword(''); setForm({ name: '', username: '', email: '', password: '', role: 'employee' }) }
+  function closeModal() { setOpen(false); setShowPassword(false); setError(''); setSuccess(''); setNewPassword(''); setForm({ name: '', username: '', email: '', password: '', role: 'employee' }) }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -102,14 +103,17 @@ export function EmployeeActions({ mode, employeeId, employeeName }: Props) {
                 ].map(f => (
                   <div key={f.key}>
                     <label className="block text-sm font-medium text-zinc-700 mb-1.5">{f.label}</label>
+                    <div className="relative">
                     <input
-                      type={f.type}
+                      type={f.key === 'password' && showPassword ? 'text' : f.type}
                       value={(form as Record<string, string>)[f.key]}
                       onChange={e => setField(f.key, f.key === 'username' ? e.target.value.toLowerCase() : e.target.value)}
                       placeholder={f.placeholder}
                       required={f.key !== 'email'}
-                      className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      className={`w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent${f.key === "password" ? " pr-10" : ""}`}
                     />
+                    {f.key === 'password' && <PasswordToggle shown={showPassword} onToggle={() => setShowPassword(v => !v)} />}
+                    </div>
                   </div>
                 ))}
                 <div>
@@ -139,15 +143,18 @@ export function EmployeeActions({ mode, employeeId, employeeName }: Props) {
               <form onSubmit={handleReset} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 mb-1.5">New Password</label>
+                  <div className="relative">
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
                     placeholder="Min 6 characters"
                     required
                     minLength={6}
-                    className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent pr-10"
                   />
+                  <PasswordToggle shown={showPassword} onToggle={() => setShowPassword(v => !v)} />
+                  </div>
                 </div>
                 {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">{error}</div>}
                 {success && <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-3 py-2 rounded-lg">{success}</div>}
@@ -163,5 +170,18 @@ export function EmployeeActions({ mode, employeeId, employeeName }: Props) {
         </div>
       )}
     </>
+  )
+}
+
+function PasswordToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={shown ? 'Hide password' : 'Show password'}
+      className="absolute inset-y-0 right-0 flex items-center px-3 text-zinc-400 hover:text-zinc-600 transition-colors"
+    >
+      {shown ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    </button>
   )
 }
