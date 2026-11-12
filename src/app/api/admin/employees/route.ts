@@ -12,22 +12,18 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const name = str(body.name, 100)
-  const resolvedUsername = str(body.username, 50)?.toLowerCase().replace(/\s+/g, ' ')
+  const resolvedUsername = str(body.username, 100)?.toLowerCase().replace(/\s+/g, ' ')
   const email = str(body.email, 200)?.toLowerCase()
   const password = body.password
   if (!name || !resolvedUsername || typeof password !== 'string' || !password) {
     return NextResponse.json({ error: 'Name, username and password are required' }, { status: 400 })
   }
-  // Login treats anything containing @ as an email, so a username with @ could never sign in
-  if (resolvedUsername.includes('@')) {
-    return NextResponse.json({ error: 'Username cannot contain "@". Put the email address in the Email field instead.' }, { status: 400 })
-  }
   if (password.length < 6 || password.length > 200) return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: 'Email address looks wrong' }, { status: 400 })
 
   const validRole = body.role === 'admin' ? 'admin' : 'employee'
-  // Email is optional — generate a placeholder if not provided
-  const resolvedEmail = email || `${resolvedUsername}@noemail.local`
+  // Username can be an email address too; use it as the email when none is given
+  const resolvedEmail = email || (resolvedUsername.includes('@') ? resolvedUsername : `${resolvedUsername}@noemail.local`)
 
   await connectDB()
 

@@ -25,7 +25,8 @@ export const authOptions: NextAuthOptions = {
 
         await connectDB()
         const id = identifier.trim().toLowerCase().replace(/\s+/g, ' ')
-        const user = await User.findOne(id.includes('@') ? { email: id } : { username: id }).lean()
+        // Usernames may themselves be email addresses, so an @ checks both
+        const user = await User.findOne(id.includes('@') ? { $or: [{ email: id }, { username: id }] } : { username: id }).lean()
         if (!user) return null
 
         // Too many wrong passwords: lock the account for a while (stops password guessing)
