@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
         if (typeof identifier !== 'string' || typeof password !== 'string' || !identifier || !password) return null
 
         await connectDB()
-        const id = identifier.trim().toLowerCase()
+        const id = identifier.trim().toLowerCase().replace(/\s+/g, ' ')
         const user = await User.findOne(id.includes('@') ? { email: id } : { username: id }).lean()
         if (!user) return null
 
