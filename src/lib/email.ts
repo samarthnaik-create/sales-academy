@@ -9,8 +9,13 @@ export function emailConfigured() {
   return Boolean(process.env.SMTP_USER && process.env.SMTP_PASS)
 }
 
+let transport: ReturnType<typeof nodemailer.createTransport> | null = null
+
 export async function sendEmail(to: string, subject: string, html: string) {
-  const transport = nodemailer.createTransport({
+  // One pooled connection, reused when sending to many people at once
+  transport ??= nodemailer.createTransport({
+    pool: true,
+    maxConnections: 3,
     host: 'smtp.gmail.com',
     port: 465,
     secure: true,
@@ -19,12 +24,15 @@ export async function sendEmail(to: string, subject: string, html: string) {
   await transport.sendMail({ from: process.env.EMAIL_FROM || process.env.SMTP_USER, to, subject, html })
 }
 
+// Placeholder addresses given to employees created without an email
+export const isRealEmail = (email?: string | null) => !!email && !email.endsWith('@noemail.local')
+
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
 
 const formatIST = (d: Date) =>
   d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) + ' IST'
 
-function layout(heading: string, color: string, body: string, link: string, button: string) {
+function layout(heading: string, color: string, body: string, link: string, button: string, footer = `You have ${WINDOW_HOURS} hours after each quiz attempt to attempt the next one. Passing or not, any attempt resets the clock.`) {
   return `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#18181b">
   <div style="background:${color};color:#fff;padding:20px 24px;border-radius:12px 12px 0 0">
     <p style="margin:0;font-size:12px;opacity:.85">Mohidin Sales Academy</p>
@@ -33,7 +41,7 @@ function layout(heading: string, color: string, body: string, link: string, butt
   <div style="border:1px solid #e4e4e7;border-top:0;padding:24px;border-radius:0 0 12px 12px;font-size:14px;line-height:1.6">
     ${body}
     <p style="margin:24px 0 8px"><a href="${link}" style="background:#dc2626;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:bold;display:inline-block">${button}</a></p>
-    <p style="margin:16px 0 0;font-size:12px;color:#71717a">You have ${WINDOW_HOURS} hours after each quiz attempt to attempt the next one. Passing or not, any attempt resets the clock.</p>
+    ${footer ? `<p style="margin:16px 0 0;font-size:12px;color:#71717a">${footer}</p>` : ''}
   </div>
 </div>`
 }
@@ -55,5 +63,16 @@ export function quizOverdueEmail(name: string, day: number, deadline: Date, link
       `Day ${day} quiz is overdue`, '#dc2626',
       `<p>Hi ${esc(name)},</p><p>Your <strong>Day ${day}</strong> quiz was due by <strong>${formatIST(deadline)}</strong> and hasn't been attempted yet. Please attempt it as soon as possible. Your admin can see missed deadlines.</p>`,
       link, `Attempt Day ${day} now`),
+  }
+}
+
+export function announcementEmail(name: string, title: string, body: string | undefined, link: string) {
+  const message = body ? `<p>${esc(body).replace(/\r?\n/g, '<br>')}</p>` : ''
+  return {
+    subject: `Announcement: ${title}`,
+    html: layout(
+      esc(title), '#dc2626',
+      `<p>Hi ${esc(name)},</p>${message}<p style="color:#71717a">This announcement is also on your Sales Academy dashboard.</p>`,
+      link, 'Open Sales Academy', ''),
   }
 }
