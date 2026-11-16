@@ -41,7 +41,11 @@ export default async function DashboardPage() {
     Course.find().sort({ dayNumber: 1 }).lean(),
     Progress.find({ userId: user.id }).lean(),
     Announcement.find({
-      $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+      $and: [
+        { $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }] },
+        // Sent to everyone, or to a list that includes this employee
+        { $or: [{ audience: { $exists: false } }, { audience: { $size: 0 } }, { audience: user.id }] },
+      ],
     }).sort({ createdAt: -1 }).limit(3).lean(),
     Progress.findOne({ userId: user.id, lastVisited: { $ne: null } })
       .sort({ lastVisited: -1 }).lean(),

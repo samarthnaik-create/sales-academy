@@ -3,7 +3,7 @@ import { requireAdmin } from '@/lib/auth'
 import { connectDB } from '@/lib/mongoose'
 import { Announcement } from '@/models/Announcement'
 import { User } from '@/models/User'
-import { str } from '@/lib/validate'
+import { str, isId } from '@/lib/validate'
 import { emailConfigured, sendEmail, announcementEmail, isRealEmail } from '@/lib/email'
 
 export const maxDuration = 60
@@ -30,16 +30,30 @@ export async function POST(req: NextRequest) {
   if (!title) return NextResponse.json({ error: 'Title is required' }, { status: 400 })
   const notify = input.sendEmail === true
 
+  // Optional list of employees; empty means everyone
+  const picked = Array.isArray(input.audience) ? [...new Set(input.audience.filter(isId))] : []
+  if (Array.isArray(input.audience) && input.audience.length > 0 && picked.length === 0) {
+    return NextResponse.json({ error: 'Select at least one employee' }, { status: 400 })
+  }
+
   if (notify && !emailConfigured()) {
     return NextResponse.json({ error: 'Email is not set up on the server, so nothing was posted. Untick "Also email" to post without emailing.' }, { status: 500 })
   }
 
   await connectDB()
-  const announcement = await Announcement.create({ title, body, expiresAt: endOfDayIST(input.expiresAt) })
+  const audience = picked.length
+    ? (await User.find({ _id: { $in: picked }, role: 'employee' }, { _id: 1 }).lean()).map(u => u._id)
+    : []
+  if (picked.length && audience.length === 0) return NextResponse.json({ error: 'Those employees no longer exist' }, { status: 400 })
+
+  const announcement = await Announcement.create({
+    title, body, expiresAt: endOfDayIST(input.expiresAt),
+    ...(audience.length ? { audience } : {}),
+  })
 
   let email: { sent: number; failed: string[]; noEmail: number } | null = null
   if (notify) {
-    const employees = await User.find({ role: 'employee' }, { name: 1, email: 1 }).lean()
+    const employees = await User.find({ role: 'employee', ...(audience.length ? { _id: { $in: audience } } : {}) }, { name: 1, email: 1 }).lean()
     const recipients = employees.filter(e => isRealEmail(e.email))
     const link = `${req.nextUrl.origin}/dashboard`
     email = { sent: 0, failed: [], noEmail: employees.length - recipients.length }
