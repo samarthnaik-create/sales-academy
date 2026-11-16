@@ -5,25 +5,20 @@ import { connectDB } from '@/lib/mongoose'
 import { User } from '@/models/User'
 import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
-import { str } from '@/lib/validate'
+import { parseEmployeeFields } from '@/lib/validate'
 
 export async function POST(req: NextRequest) {
   try { await requireAdmin() } catch { return NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
 
   const body = await req.json()
-  const name = str(body.name, 100)
-  const resolvedUsername = str(body.username, 100)?.toLowerCase().replace(/\s+/g, ' ')
-  const email = str(body.email, 200)?.toLowerCase()
+  const fields = parseEmployeeFields(body)
+  if (!fields.ok) return NextResponse.json({ error: fields.error }, { status: 400 })
+  const { name, username: resolvedUsername, email: resolvedEmail } = fields
   const password = body.password
-  if (!name || !resolvedUsername || typeof password !== 'string' || !password) {
-    return NextResponse.json({ error: 'Name, username and password are required' }, { status: 400 })
+  if (typeof password !== 'string' || password.length < 6 || password.length > 200) {
+    return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
   }
-  if (password.length < 6 || password.length > 200) return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: 'Email address looks wrong' }, { status: 400 })
-
   const validRole = body.role === 'admin' ? 'admin' : 'employee'
-  // Username can be an email address too; use it as the email when none is given
-  const resolvedEmail = email || (resolvedUsername.includes('@') ? resolvedUsername : `${resolvedUsername}@noemail.local`)
 
   await connectDB()
 

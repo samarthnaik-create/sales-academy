@@ -28,3 +28,16 @@ export function parseDayNumber(v: unknown): number | null {
   const n = Number(v)
   return Number.isInteger(n) && n >= 1 && n <= 365 ? n : null
 }
+
+// Name, username and email for an employee, shared by "Add" and "Edit".
+// Username can itself be an email address; with no email given it becomes the email,
+// otherwise a placeholder that never receives mail.
+export function parseEmployeeFields(body: Record<string, unknown>):
+  { ok: true; name: string; username: string; email: string } | { ok: false; error: string } {
+  const name = str(body.name, 100)
+  const username = str(body.username, 100)?.toLowerCase().replace(/\s+/g, ' ')
+  const email = str(body.email, 200)?.toLowerCase()
+  if (!name || !username) return { ok: false, error: 'Name and username are required' }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: 'Email address looks wrong' }
+  return { ok: true, name, username, email: email || (username.includes('@') ? username : `${username}@noemail.local`) }
+}

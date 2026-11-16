@@ -6,6 +6,7 @@ import { User } from '@/models/User'
 import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
 import { EmployeeActions } from '@/components/admin/employee-actions'
+import { EditEmployee } from '@/components/admin/edit-employee'
 import { CheckCircle2 } from 'lucide-react'
 
 export default async function EmployeesPage() {
@@ -77,7 +78,7 @@ export default async function EmployeesPage() {
                           </div>
                           <div>
                             <p className="font-medium text-zinc-900">{emp.name}</p>
-                            <p className="text-xs text-zinc-400">{emp.email}</p>
+                            <p className="text-xs text-zinc-400">{emp.email.endsWith('@noemail.local') ? 'No email' : emp.email}</p>
                           </div>
                         </div>
                       </td>
@@ -100,7 +101,10 @@ export default async function EmployeesPage() {
                         )}
                       </td>
                       <td className="px-5 py-3.5">
-                        <EmployeeActions mode="reset" employeeId={emp.id} employeeName={emp.name} />
+                        <div className="flex items-center gap-2">
+                          <EditEmployee employee={{ id: emp.id, name: emp.name, username: emp.username, email: emp.email }} />
+                          <EmployeeActions mode="reset" employeeId={emp.id} employeeName={emp.name} />
+                        </div>
                       </td>
                     </tr>
                   )
