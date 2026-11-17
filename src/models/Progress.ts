@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose'
 export interface IProgress extends Document {
-  userId: mongoose.Types.ObjectId; courseId: mongoose.Types.ObjectId; unlocked: boolean; completed: boolean; score: number; attempts: number; completedAt?: Date; lastTopicIdx: number; lastModuleIdx: number; lastVisited?: Date
+  userId: mongoose.Types.ObjectId; courseId: mongoose.Types.ObjectId; unlocked: boolean; completed: boolean; score: number; attempts: number; completedAt?: Date; lastTopicIdx: number; lastModuleIdx: number; lastVisited?: Date; readModules: string[]
 }
 const ProgressSchema = new Schema<IProgress>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -13,6 +13,7 @@ const ProgressSchema = new Schema<IProgress>({
   lastTopicIdx: { type: Number, default: 0 },
   lastModuleIdx: { type: Number, default: 0 },
   lastVisited: Date,
+  readModules: { type: [String], default: [] }, // "topic-module" keys the employee has read
 })
 ProgressSchema.index({ userId: 1, courseId: 1 }, { unique: true })
 export const Progress = mongoose.models.Progress || mongoose.model<IProgress>('Progress', ProgressSchema)

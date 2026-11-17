@@ -51,7 +51,7 @@ export function DashboardHome({ firstName, completed, total, resume, days, child
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       {/* Header band */}
       <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-red-800 to-red-950 text-white">
         <div className="flex flex-col gap-6 px-6 pb-6 pt-8 sm:px-8 md:flex-row md:items-end md:justify-between">

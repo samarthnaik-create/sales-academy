@@ -11,7 +11,7 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
     <div className="flex h-screen overflow-hidden bg-zinc-50">
       <Sidebar userName={session.user.name ?? 'User'} role={session.user.role} />
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="max-w-6xl mx-auto px-6 py-8">
           {children}
         </div>
       </main>

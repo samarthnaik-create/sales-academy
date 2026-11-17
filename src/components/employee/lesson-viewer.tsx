@@ -1,12 +1,21 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, CheckCircle2, FileQuestion, BookOpen, FolderOpen, StickyNote, X, PenLine } from 'lucide-react'
+import {
+  ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Circle, Lock, PlayCircle,
+  StickyNote, FileQuestion, Trophy, BookOpen,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface VideoEntry { title: string; url: string }
 interface Module { title: string; html: string; videos?: VideoEntry[] }
 interface TopicGroup { title: string; modules: Module[] }
+
+interface Props {
+  course: { id: string; dayNumber: number; title: string; description: string | null; content: string | null; videos: VideoEntry[] }
+  quiz: { questionCount: number; passMark: number; completed: boolean; bestScore: number; attempts: number; hasNextDay: boolean }
+  start: { topicIdx: number; moduleIdx: number; read: string[] }
+}
 
 function getEmbedUrl(url: string): string | null {
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
@@ -18,366 +27,408 @@ function getEmbedUrl(url: string): string | null {
   return null
 }
 
-interface Props {
-  content: string
-  courseId: string
-  dayNumber: number
-  quizCount: number
-  completed: boolean
-  bestScore: number
-}
-
-function parseTopics(content: string): TopicGroup[] {
+function parseTopics(content: string | null): TopicGroup[] {
+  if (!content) return []
   try {
     const parsed = JSON.parse(content)
     if (Array.isArray(parsed) && parsed.length > 0) {
-      if ('modules' in parsed[0] && Array.isArray((parsed[0] as TopicGroup).modules)) return parsed as TopicGroup[]
+      if ('modules' in parsed[0] && Array.isArray((parsed[0] as TopicGroup).modules)) {
+        return (parsed as TopicGroup[]).filter(t => t.modules?.length)
+      }
       if ('html' in parsed[0]) return [{ title: '', modules: parsed as Module[] }]
     }
   } catch {}
   return [{ title: '', modules: [{ title: 'Lesson', html: content }] }]
 }
 
-export function LessonViewer({ content, courseId, dayNumber, quizCount, completed, bestScore }: Props) {
-  const topics = parseTopics(content)
-  const multiTopic = topics.length > 1 || (topics.length === 1 && topics[0].title !== '')
+const key = (ti: number, mi: number) => `${ti}-${mi}`
 
-  const [topicIdx, setTopicIdx] = useState(0)
-  const [moduleIdx, setModuleIdx] = useState(0)
-  const [readModules, setReadModules] = useState<Set<string>>(new Set())
+function Videos({ videos }: { videos: VideoEntry[] }) {
+  return (
+    <div className="space-y-4">
+      {videos.map((v, i) => {
+        const embed = getEmbedUrl(v.url)
+        return embed ? (
+          <div key={i}>
+            {v.title && (
+              <p className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-700">
+                <PlayCircle className="h-4 w-4 text-red-800" /> {v.title}
+              </p>
+            )}
+            <div className="aspect-video overflow-hidden rounded-xl bg-black">
+              <iframe src={embed} className="h-full w-full" allowFullScreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
+            </div>
+          </div>
+        ) : (
+          <a key={i} href={v.url} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-xl border border-zinc-200 px-4 py-3 text-sm transition-colors hover:bg-zinc-50">
+            <PlayCircle className="h-5 w-5 text-red-800" />
+            <span className="font-medium text-zinc-800">{v.title || 'Training video'}</span>
+            <span className="ml-auto text-xs text-zinc-400">Opens in a new tab</span>
+          </a>
+        )
+      })}
+    </div>
+  )
+}
 
-  // Notes
+export function LessonViewer({ course, quiz, start }: Props) {
+  const topics = useMemo(() => parseTopics(course.content), [course.content])
+  const flat = useMemo(() => topics.flatMap((t, ti) => t.modules.map((m, mi) => ({ ti, mi, title: m.title, topic: t.title }))), [topics])
+  const total = flat.length
+  const named = topics.some(t => t.title)
+
+  // Open where the employee left off (if that module still exists)
+  const startOk = !!topics[start.topicIdx]?.modules[start.moduleIdx]
+  const [pos, setPos] = useState({ ti: startOk ? start.topicIdx : 0, mi: startOk ? start.moduleIdx : 0 })
+  const [read, setRead] = useState<Set<string>>(() => new Set(start.read))
+  const [openTopics, setOpenTopics] = useState<Set<number>>(() => new Set([startOk ? start.topicIdx : 0]))
+
   const [notes, setNotes] = useState<Record<string, string>>({})
-  const [noteSaving, setNoteSaving] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [noteState, setNoteState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [showNote, setShowNote] = useState(false)
-  const [showAllNotes, setShowAllNotes] = useState(false)
-  const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  const noteTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  const lessonTop = useRef<HTMLDivElement>(null)
+  const quizRef = useRef<HTMLDivElement>(null)
 
-  const currentTopic = topics[topicIdx]
-  const currentModules = currentTopic?.modules ?? []
-  const currentModule = currentModules[moduleIdx]
-  const isLastModule = moduleIdx === currentModules.length - 1
-  const isLastTopic = topicIdx === topics.length - 1
-  const isVeryLast = isLastModule && isLastTopic
-  const isFirst = topicIdx === 0 && moduleIdx === 0
+  const flatIdx = flat.findIndex(f => f.ti === pos.ti && f.mi === pos.mi)
+  const current = topics[pos.ti]?.modules[pos.mi]
+  const prevItem = flatIdx > 0 ? flat[flatIdx - 1] : null
+  const nextItem = flatIdx >= 0 && flatIdx < total - 1 ? flat[flatIdx + 1] : null
+  const currentKey = key(pos.ti, pos.mi)
 
-  const totalModules = topics.reduce((sum, t) => sum + t.modules.length, 0)
-  const currentFlatIdx = topics.slice(0, topicIdx).reduce((sum, t) => sum + t.modules.length, 0) + moduleIdx
+  const readCount = flat.filter(f => read.has(key(f.ti, f.mi))).length
+  // Passing the quiz already proves the day was read; a day without reading is open straight away
+  const quizOpen = quiz.completed || total === 0 || readCount >= total
+  const pct = total ? Math.round((readCount / total) * 100) : 100
 
-  function moduleKey(ti: number, mi: number) { return `${ti}-${mi}` }
-  const currentKey = moduleKey(topicIdx, moduleIdx)
-
-  // Load notes on mount
   useEffect(() => {
-    fetch(`/api/notes?courseId=${courseId}`)
+    fetch(`/api/notes?courseId=${course.id}`)
       .then(r => r.json())
       .then(data => {
         const map: Record<string, string> = {}
-        for (const n of (data.notes ?? [])) map[n.moduleKey] = n.content
+        for (const n of data.notes ?? []) map[n.moduleKey] = n.content
         setNotes(map)
       })
-  }, [courseId])
+      .catch(() => {})
+  }, [course.id])
 
-  // Track position on navigation (debounced 1.5s)
-  const positionTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Save position and read modules (debounced) so the next visit picks up here
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
-    if (positionTimer.current) clearTimeout(positionTimer.current)
-    positionTimer.current = setTimeout(() => {
+    if (total === 0) return
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
       fetch('/api/progress/position', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ courseId, topicIdx, moduleIdx }),
-      })
-    }, 1500)
-    return () => { if (positionTimer.current) clearTimeout(positionTimer.current) }
-  }, [courseId, topicIdx, moduleIdx])
+        body: JSON.stringify({ courseId: course.id, topicIdx: pos.ti, moduleIdx: pos.mi, read: [...read] }),
+        keepalive: true,
+      }).catch(() => {})
+    }, 1000)
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
+  }, [course.id, pos, read, total])
 
-  function updateNote(key: string, value: string) {
-    setNotes(prev => ({ ...prev, [key]: value }))
-    setNoteSaving('saving')
-    if (saveTimers.current[key]) clearTimeout(saveTimers.current[key])
-    saveTimers.current[key] = setTimeout(() => {
+  function go(ti: number, mi: number) {
+    setRead(prev => new Set(prev).add(currentKey))
+    setPos({ ti, mi })
+    setOpenTopics(prev => new Set(prev).add(ti))
+    setShowNote(false)
+    lessonTop.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  function finish() {
+    setRead(prev => new Set(prev).add(currentKey))
+    setTimeout(() => quizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50)
+  }
+
+  function updateNote(k: string, value: string) {
+    setNotes(prev => ({ ...prev, [k]: value }))
+    setNoteState('saving')
+    if (noteTimers.current[k]) clearTimeout(noteTimers.current[k])
+    noteTimers.current[k] = setTimeout(() => {
       fetch('/api/notes', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ courseId, moduleKey: key, content: value }),
-      }).then(() => setNoteSaving('saved'))
+        body: JSON.stringify({ courseId: course.id, moduleKey: k, content: value }),
+      }).then(r => setNoteState(r.ok ? 'saved' : 'idle')).catch(() => setNoteState('idle'))
     }, 800)
   }
 
-  function markRead(ti: number, mi: number) {
-    setReadModules(prev => new Set([...prev, moduleKey(ti, mi)]))
+  function toggleTopic(ti: number) {
+    setOpenTopics(prev => {
+      const next = new Set(prev)
+      if (next.has(ti)) next.delete(ti)
+      else next.add(ti)
+      return next
+    })
   }
 
-  function isTopicFullyRead(ti: number) {
-    return topics[ti].modules.every((_, mi) => readModules.has(moduleKey(ti, mi)))
-  }
-
-  const allRead = topics.every((_, ti) => isTopicFullyRead(ti))
-
-  function goToTopic(ti: number) {
-    markRead(topicIdx, moduleIdx)
-    setTopicIdx(ti)
-    setModuleIdx(0)
-    setShowNote(false)
-  }
-
-  function goToModule(mi: number) {
-    markRead(topicIdx, moduleIdx)
-    setModuleIdx(mi)
-    setShowNote(false)
-  }
-
-  function next() {
-    markRead(topicIdx, moduleIdx)
-    if (!isLastModule) setModuleIdx(m => m + 1)
-    else if (!isLastTopic) { setTopicIdx(t => t + 1); setModuleIdx(0) }
-    setShowNote(false)
-  }
-
-  function prev() {
-    if (moduleIdx > 0) setModuleIdx(m => m - 1)
-    else if (topicIdx > 0) {
-      const prevTopic = topics[topicIdx - 1]
-      setTopicIdx(t => t - 1)
-      setModuleIdx(Math.max(0, prevTopic.modules.length - 1))
-    }
-    setShowNote(false)
-  }
-
-  // Count notes that have content
-  const totalNoteCount = Object.values(notes).filter(v => v?.trim()).length
-  const currentNoteContent = notes[currentKey] ?? ''
-  const currentHasNote = !!currentNoteContent.trim()
+  const noteCount = Object.values(notes).filter(v => v?.trim()).length
+  const currentNote = notes[currentKey] ?? ''
 
   return (
-    <div className="space-y-4">
-      {/* Topic tabs */}
-      {multiTopic && (
-        <div className="flex gap-1.5 flex-wrap">
-          {topics.map((t, ti) => {
-            const topicRead = isTopicFullyRead(ti)
-            return (
-              <button key={ti} onClick={() => goToTopic(ti)}
-                className={cn(
-                  'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                  topicIdx === ti ? 'bg-red-600 text-white'
-                    : topicRead ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                )}>
-                {topicRead ? <CheckCircle2 className="h-3 w-3" /> : <FolderOpen className="h-3 w-3" />}
-                {t.title || `Topic ${ti + 1}`}
-              </button>
-            )
-          })}
-        </div>
-      )}
+    <div className="space-y-6">
+      <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900">
+        <ArrowLeft className="h-4 w-4" /> All days
+      </Link>
 
-      {/* Module tabs within current topic */}
-      {currentModules.length > 1 && (
-        <div className="flex gap-1.5 flex-wrap">
-          {currentModules.map((m, mi) => {
-            const isRead = readModules.has(moduleKey(topicIdx, mi))
-            const hasNote = !!(notes[moduleKey(topicIdx, mi)]?.trim())
-            return (
-              <button key={mi} onClick={() => goToModule(mi)}
-                className={cn(
-                  'px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1',
-                  moduleIdx === mi ? 'bg-zinc-800 text-white'
-                    : isRead ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                )}>
-                {isRead && <CheckCircle2 className="h-3 w-3" />}
-                {mi + 1}. {m.title}
-                {hasNote && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" title="Has notes" />}
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Content card */}
-      <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden">
-        {/* Header */}
-        <div className="px-5 py-3.5 border-b border-zinc-100 flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
-            <BookOpen className="h-4 w-4 text-red-600 shrink-0" />
-            <span className="font-semibold text-sm text-zinc-900 truncate">{currentModule?.title}</span>
+      {/* Header */}
+      <div className="rounded-2xl bg-gradient-to-br from-red-800 to-red-950 px-6 py-7 text-white sm:px-8">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0">
+            <span className="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider">Day {course.dayNumber}</span>
+            <h1 className="font-brand mt-3 text-2xl font-bold sm:text-3xl">{course.title}</h1>
+            {course.description && <p className="mt-2 max-w-2xl text-sm text-red-100/80">{course.description}</p>}
           </div>
-          <div className="flex items-center gap-2 shrink-0 ml-3">
-            {totalModules > 1 && (
-              <span className="text-xs text-zinc-400">{currentFlatIdx + 1} / {totalModules}</span>
-            )}
-            <button
-              onClick={() => setShowNote(v => !v)}
-              title="My notes for this module"
-              className={cn(
-                'inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors',
-                showNote ? 'bg-amber-100 text-amber-700' : currentHasNote ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100'
-              )}>
-              <StickyNote className="h-3.5 w-3.5" />
-              {currentHasNote ? 'Notes' : 'Add note'}
-            </button>
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        {totalModules > 1 && (
-          <div className="h-1 bg-zinc-100">
-            <div className="h-full bg-red-600 transition-all" style={{ width: `${((currentFlatIdx + 1) / totalModules) * 100}%` }} />
-          </div>
-        )}
-
-        {/* Module videos */}
-        {(currentModule?.videos ?? []).filter(v => v.url.trim()).length > 0 && (
-          <div className="px-6 pt-5 space-y-4">
-            {(currentModule.videos ?? []).filter(v => v.url.trim()).map((v, i) => {
-              const embedUrl = getEmbedUrl(v.url)
-              return embedUrl ? (
-                <div key={i}>
-                  {v.title && <p className="text-xs font-semibold text-zinc-500 mb-1.5">{v.title}</p>}
-                  <div className="bg-black rounded-xl overflow-hidden aspect-video">
-                    <iframe src={embedUrl} className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen />
-                  </div>
-                </div>
-              ) : (
-                <a key={i} href={v.url} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-xs text-red-600 hover:underline">
-                  ▶ {v.title || 'Watch video'}
-                </a>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="px-6 py-5">
-          {currentModule?.html ? (
-            <div
-              className="text-sm text-zinc-700 leading-relaxed [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-zinc-900 [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-zinc-800 [&_h3]:mt-3 [&_h3]:mb-1.5 [&_p]:mb-3 [&_p]:text-zinc-600 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ul]:space-y-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_ol]:space-y-1.5 [&_li]:text-zinc-600 [&_strong]:font-semibold [&_strong]:text-zinc-900 [&_em]:italic [&_a]:text-red-600 [&_a]:underline [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-2"
-              dangerouslySetInnerHTML={{ __html: currentModule.html }}
-            />
-          ) : (
-            <p className="text-sm text-zinc-400 italic">No content for this module.</p>
-          )}
-        </div>
-
-        {/* Notes panel */}
-        {showNote && (
-          <div className="border-t border-amber-100 bg-amber-50/60 px-5 py-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5">
-                <PenLine className="h-3.5 w-3.5 text-amber-600" />
-                <span className="text-xs font-semibold text-amber-700">My Notes</span>
+          {total > 0 && (
+            <div className="w-full shrink-0 md:w-56">
+              <div className="flex items-baseline justify-between text-sm">
+                <span className="text-red-100/80">Your progress</span>
+                <span className="font-semibold">{readCount}/{total} read</span>
               </div>
-              <span className={cn(
-                'text-[10px] font-medium transition-colors',
-                noteSaving === 'saving' ? 'text-amber-500' : noteSaving === 'saved' ? 'text-green-600' : 'text-zinc-400'
-              )}>
-                {noteSaving === 'saving' ? 'Saving…' : noteSaving === 'saved' ? 'Saved ✓' : ''}
-              </span>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/20">
+                <div className="h-full rounded-full bg-white transition-all" style={{ width: `${pct}%` }} />
+              </div>
             </div>
-            <textarea
-              value={currentNoteContent}
-              onChange={e => updateNote(currentKey, e.target.value)}
-              placeholder="Type your notes for this module…"
-              rows={4}
-              className="w-full text-sm text-zinc-800 bg-white border border-amber-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none placeholder:text-zinc-400"
-            />
-          </div>
-        )}
-
-        {/* Navigation */}
-        <div className="px-5 py-4 border-t border-zinc-100 flex items-center justify-between">
-          <button onClick={prev} disabled={isFirst}
-            className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 disabled:opacity-30 transition-colors">
-            <ChevronLeft className="h-4 w-4" /> Previous
-          </button>
-
-          {!isVeryLast ? (
-            <button onClick={next}
-              className="inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-              {isLastModule && !isLastTopic ? <>Next Topic <ChevronRight className="h-4 w-4" /></> : <>Next <ChevronRight className="h-4 w-4" /></>}
-            </button>
-          ) : (
-            <button onClick={() => markRead(topicIdx, moduleIdx)}
-              className="inline-flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-              <CheckCircle2 className="h-4 w-4" /> Mark as Read
-            </button>
           )}
         </div>
       </div>
 
-      {/* All Notes panel (if any notes exist) */}
-      {totalNoteCount > 0 && (
-        <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden">
-          <button
-            onClick={() => setShowAllNotes(v => !v)}
-            className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-zinc-50 transition-colors">
-            <div className="flex items-center gap-2">
-              <StickyNote className="h-4 w-4 text-amber-500" />
-              <span className="font-semibold text-sm text-zinc-900">My Notes</span>
-              <span className="text-xs text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded-full">{totalNoteCount} module{totalNoteCount > 1 ? 's' : ''}</span>
-            </div>
-            {showAllNotes ? <X className="h-4 w-4 text-zinc-400" /> : <ChevronRight className="h-4 w-4 text-zinc-400" />}
-          </button>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        {/* Main column */}
+        <div className="min-w-0 space-y-6">
+          {course.videos.length > 0 && (
+            <section className="rounded-2xl border border-zinc-200 bg-white p-5">
+              <h2 className="mb-4 text-sm font-semibold text-zinc-900">Videos for this day</h2>
+              <Videos videos={course.videos} />
+            </section>
+          )}
 
-          {showAllNotes && (
-            <div className="border-t border-zinc-100 px-5 py-4 space-y-4 max-h-80 overflow-y-auto">
-              {topics.map((topic, ti) =>
-                topic.modules.map((mod, mi) => {
-                  const key = moduleKey(ti, mi)
-                  const noteContent = notes[key]?.trim()
-                  if (!noteContent) return null
-                  return (
-                    <div key={key}>
-                      <p className="text-xs font-semibold text-zinc-400 mb-1">
-                        {multiTopic && topic.title ? `${topic.title} · ` : ''}{mod.title}
-                      </p>
-                      <p className="text-sm text-zinc-700 whitespace-pre-wrap leading-relaxed">{noteContent}</p>
-                    </div>
-                  )
-                })
+          {current ? (
+            <section ref={lessonTop} className="scroll-mt-6 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+              <div className="border-b border-zinc-100 px-6 pb-4 pt-5 sm:px-8">
+                <p className="text-xs font-medium text-zinc-400">
+                  {named && topics[pos.ti].title ? `${topics[pos.ti].title} · ` : ''}Lesson {flatIdx + 1} of {total}
+                </p>
+                <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                  <h2 className="text-xl font-semibold text-zinc-900">{current.title}</h2>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    {read.has(currentKey) && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Read
+                      </span>
+                    )}
+                    <button
+                      onClick={() => setShowNote(v => !v)}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                        showNote || currentNote.trim() ? 'border-red-200 bg-red-50 text-red-800' : 'border-zinc-200 text-zinc-500 hover:bg-zinc-50',
+                      )}
+                    >
+                      <StickyNote className="h-3.5 w-3.5" /> {currentNote.trim() ? 'My note' : 'Add note'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {showNote && (
+                <div className="border-b border-zinc-100 bg-zinc-50 px-6 py-4 sm:px-8">
+                  <div className="mb-2 flex items-center justify-between text-xs">
+                    <span className="font-medium text-zinc-600">My notes for this lesson (only you can see these)</span>
+                    <span className={noteState === 'saved' ? 'text-emerald-600' : 'text-zinc-400'}>
+                      {noteState === 'saving' ? 'Saving…' : noteState === 'saved' ? 'Saved' : ''}
+                    </span>
+                  </div>
+                  <textarea
+                    value={currentNote}
+                    onChange={e => updateNote(currentKey, e.target.value)}
+                    placeholder="Write anything you want to remember…"
+                    rows={4}
+                    className="w-full resize-none rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-red-800/40"
+                  />
+                </div>
               )}
-            </div>
+
+              {(current.videos ?? []).filter(v => v.url?.trim()).length > 0 && (
+                <div className="px-6 pt-6 sm:px-8">
+                  <Videos videos={(current.videos ?? []).filter(v => v.url?.trim())} />
+                </div>
+              )}
+
+              <div className="px-6 py-6 sm:px-8">
+                {current.html ? (
+                  <div
+                    className="text-[15px] leading-7 text-zinc-700 [&_a]:text-red-800 [&_a]:underline [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-zinc-900 [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:font-semibold [&_h3]:text-zinc-900 [&_img]:my-4 [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-xl [&_li]:pl-1 [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:space-y-1.5 [&_ol]:pl-6 [&_p]:mb-4 [&_strong]:font-semibold [&_strong]:text-zinc-900 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-6"
+                    dangerouslySetInnerHTML={{ __html: current.html }}
+                  />
+                ) : (
+                  <p className="text-sm italic text-zinc-400">No reading for this lesson.</p>
+                )}
+              </div>
+
+              {/* Previous / next */}
+              <div className="flex items-center justify-between gap-4 border-t border-zinc-100 px-6 py-4 sm:px-8">
+                {prevItem ? (
+                  <button onClick={() => go(prevItem.ti, prevItem.mi)} className="group flex min-w-0 items-center gap-2 text-left text-sm text-zinc-500 hover:text-zinc-900">
+                    <ChevronLeft className="h-4 w-4 shrink-0" />
+                    <span className="min-w-0">
+                      <span className="block text-xs text-zinc-400">Previous</span>
+                      <span className="block truncate">{prevItem.title}</span>
+                    </span>
+                  </button>
+                ) : <span />}
+                {nextItem ? (
+                  <button onClick={() => go(nextItem.ti, nextItem.mi)} className="flex min-w-0 items-center gap-3 rounded-xl bg-red-800 px-4 py-2.5 text-left text-white transition-colors hover:bg-red-900">
+                    <span className="min-w-0">
+                      <span className="block text-xs text-red-100/80">Next lesson</span>
+                      <span className="block max-w-[14rem] truncate text-sm font-medium">{nextItem.title}</span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0" />
+                  </button>
+                ) : quizOpen ? (
+                  <Link href={`/quiz/${course.id}`} className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-red-800 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-900">
+                    Go to quiz <ChevronRight className="h-4 w-4" />
+                  </Link>
+                ) : (
+                  <button onClick={finish} className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700">
+                    <CheckCircle2 className="h-4 w-4" /> Finish reading
+                  </button>
+                )}
+              </div>
+            </section>
+          ) : (
+            <section className="rounded-2xl border border-zinc-200 bg-white px-6 py-10 text-center">
+              <BookOpen className="mx-auto mb-2 h-8 w-8 text-zinc-300" />
+              <p className="text-sm text-zinc-500">There&apos;s no reading for this day. Go straight to the quiz.</p>
+            </section>
+          )}
+
+          {/* All notes */}
+          {noteCount > 0 && (
+            <details className="group rounded-2xl border border-zinc-200 bg-white">
+              <summary className="flex cursor-pointer list-none items-center justify-between px-6 py-4">
+                <span className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                  <StickyNote className="h-4 w-4 text-red-800" /> All my notes
+                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500">{noteCount}</span>
+                </span>
+                <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="space-y-4 border-t border-zinc-100 px-6 py-4">
+                {flat.map(f => {
+                  const text = notes[key(f.ti, f.mi)]?.trim()
+                  if (!text) return null
+                  return (
+                    <button key={key(f.ti, f.mi)} onClick={() => go(f.ti, f.mi)} className="block w-full text-left">
+                      <p className="text-xs font-medium text-zinc-400">{f.topic ? `${f.topic} · ` : ''}{f.title}</p>
+                      <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-zinc-700">{text}</p>
+                    </button>
+                  )
+                })}
+              </div>
+            </details>
           )}
         </div>
-      )}
 
-      {/* Quiz card */}
-      <div className={cn('bg-white rounded-xl border p-5 transition-all', allRead ? 'border-zinc-200' : 'border-zinc-100 opacity-60')}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', allRead ? 'bg-red-50' : 'bg-zinc-50')}>
-            <FileQuestion className={cn('h-4 w-4', allRead ? 'text-red-600' : 'text-zinc-300')} />
-          </div>
-          <div>
-            <p className="font-semibold text-sm text-zinc-900">Quiz</p>
-            <p className="text-xs text-zinc-400">
-              {allRead
-                ? `${quizCount > 0 ? quizCount + ' questions' : 'AI-generated'} · Pass 90% to unlock next day`
-                : `Read all ${totalModules} module${totalModules !== 1 ? 's' : ''} to unlock the quiz`}
-            </p>
-          </div>
-        </div>
+        {/* Sidebar: outline + quiz */}
+        <aside className="space-y-6 lg:sticky lg:top-6">
+          {total > 0 && (
+            <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+              <div className="border-b border-zinc-100 px-5 py-4">
+                <h2 className="font-semibold text-zinc-900">Day outline</h2>
+                <p className="mt-0.5 text-xs text-zinc-400">
+                  {named ? `${topics.length} topic${topics.length === 1 ? '' : 's'} · ` : ''}{total} lesson{total === 1 ? '' : 's'}
+                </p>
+              </div>
+              <div className="max-h-[60vh] overflow-y-auto">
+                {topics.map((t, ti) => {
+                  const topicRead = t.modules.filter((_, mi) => read.has(key(ti, mi))).length
+                  const open = !named || openTopics.has(ti)
+                  return (
+                    <div key={ti} className="border-b border-zinc-100 last:border-b-0">
+                      {named && (
+                        <button onClick={() => toggleTopic(ti)} className="flex w-full items-center justify-between gap-3 px-5 py-3 text-left hover:bg-zinc-50">
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-semibold text-zinc-900">{t.title || `Topic ${ti + 1}`}</span>
+                            <span className="text-xs text-zinc-400">{topicRead}/{t.modules.length} read</span>
+                          </span>
+                          {topicRead === t.modules.length
+                            ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                            : <ChevronDown className={cn('h-4 w-4 shrink-0 text-zinc-400 transition-transform', open && 'rotate-180')} />}
+                        </button>
+                      )}
+                      {open && (
+                        <ul className="pb-2">
+                          {t.modules.map((m, mi) => {
+                            const k = key(ti, mi)
+                            const active = ti === pos.ti && mi === pos.mi
+                            const done = read.has(k)
+                            return (
+                              <li key={mi}>
+                                <button
+                                  onClick={() => go(ti, mi)}
+                                  className={cn(
+                                    'flex w-full items-start gap-3 border-l-[3px] px-5 py-2 text-left text-sm transition-colors',
+                                    active ? 'border-red-800 bg-red-50/70 text-red-900' : 'border-transparent text-zinc-600 hover:bg-zinc-50',
+                                  )}
+                                >
+                                  {done
+                                    ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                    : <Circle className={cn('mt-0.5 h-4 w-4 shrink-0', active ? 'text-red-800' : 'text-zinc-300')} />}
+                                  <span className={cn('min-w-0 flex-1', active && 'font-medium')}>{m.title}</span>
+                                  {notes[k]?.trim() && <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" />}
+                                </button>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )}
 
-        {completed && (
-          <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-lg px-3 py-2 mb-4">
-            <CheckCircle2 className="h-4 w-4" /> Completed · Best score: {bestScore}%
-          </div>
-        )}
+          {/* Quiz */}
+          <section ref={quizRef} className="rounded-2xl border border-zinc-200 bg-white p-5">
+            <div className="flex items-center gap-3">
+              <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', quizOpen ? 'bg-red-50 text-red-800' : 'bg-zinc-100 text-zinc-400')}>
+                {quizOpen ? <FileQuestion className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+              </div>
+              <div>
+                <h2 className="font-semibold text-zinc-900">Day {course.dayNumber} quiz</h2>
+                <p className="text-xs text-zinc-400">{quiz.questionCount} questions · pass mark {quiz.passMark}%</p>
+              </div>
+            </div>
 
-        {allRead ? (
-          <Link href={`/quiz/${courseId}`}
-            className="block text-center bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
-            {completed ? 'Retake Quiz' : 'Start Quiz'}
-          </Link>
-        ) : (
-          <div className="text-center text-sm text-zinc-400 py-2 bg-zinc-50 rounded-lg">
-            Finish reading to unlock
-          </div>
-        )}
+            {quiz.completed ? (
+              <p className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <Trophy className="h-4 w-4" /> Passed · best score {quiz.bestScore}%
+              </p>
+            ) : quiz.attempts > 0 ? (
+              <p className="mt-4 rounded-lg bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
+                Best so far {quiz.bestScore}%. You need {quiz.passMark}%{quiz.hasNextDay ? ' to unlock the next day' : ''}.
+              </p>
+            ) : null}
+
+            {quizOpen ? (
+              <Link href={`/quiz/${course.id}`} className="mt-4 block rounded-xl bg-red-800 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-red-900">
+                {quiz.completed ? 'Retake quiz' : quiz.attempts > 0 ? 'Try again' : 'Start quiz'}
+              </Link>
+            ) : (
+              <div className="mt-4">
+                <div className="h-1.5 overflow-hidden rounded-full bg-zinc-100">
+                  <div className="h-full rounded-full bg-red-800 transition-all" style={{ width: `${pct}%` }} />
+                </div>
+                <p className="mt-2 text-xs text-zinc-500">
+                  Read all lessons to unlock the quiz · {total - readCount} left
+                </p>
+              </div>
+            )}
+          </section>
+        </aside>
       </div>
     </div>
   )
