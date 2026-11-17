@@ -53,14 +53,14 @@ export function DashboardHome({ firstName, completed, total, resume, days, child
   return (
     <div className="space-y-6">
       {/* Header band */}
-      <div className="overflow-hidden rounded-2xl bg-red-600 text-white">
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-red-800 to-red-950 text-white">
         <div className="flex flex-col gap-6 px-6 pb-6 pt-8 sm:px-8 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="font-brand text-3xl font-bold md:text-4xl">Hi {firstName}!</h1>
-            <p className="mt-2 text-sm text-red-100">
+            <p className="mt-2 text-sm text-red-100/80">
               {allDone ? `You've completed all ${total} days. Well done!` : `${completed} of ${total} days completed`}
             </p>
-            <div className="mt-3 h-1.5 w-full max-w-56 overflow-hidden rounded-full bg-white/25">
+            <div className="mt-3 h-1.5 w-full max-w-56 overflow-hidden rounded-full bg-white/20">
               <div className="h-full rounded-full bg-white" style={{ width: `${pct}%` }} />
             </div>
           </div>
@@ -74,7 +74,7 @@ export function DashboardHome({ firstName, completed, total, resume, days, child
                 <p className="truncate text-sm font-semibold">Day {resume.dayNumber} · {resume.title}</p>
                 {resume.position && <p className="truncate text-xs text-zinc-400">{resume.position}</p>}
               </div>
-              <ArrowRight className="h-4 w-4 shrink-0 text-red-600 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="h-4 w-4 shrink-0 text-red-800 transition-transform group-hover:translate-x-0.5" />
             </Link>
           )}
         </div>
@@ -84,7 +84,7 @@ export function DashboardHome({ firstName, completed, total, resume, days, child
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`shrink-0 whitespace-nowrap border-b-[3px] pb-3 text-sm font-medium transition-colors ${
-                tab === t.id ? 'border-white text-white' : 'border-transparent text-red-100 hover:text-white'
+                tab === t.id ? 'border-white text-white' : 'border-transparent text-red-100/70 hover:text-white'
               }`}
             >
               {t.label} <span className="opacity-70">({t.count})</span>
@@ -115,13 +115,13 @@ export function DashboardHome({ firstName, completed, total, resume, days, child
                 {/* Day tile */}
                 <div className={`relative flex h-28 shrink-0 flex-col justify-end overflow-hidden rounded-xl p-4 sm:h-auto sm:w-44 ${
                   locked ? 'bg-zinc-100 text-zinc-400'
-                    : d.completed ? 'bg-red-50 text-red-700'
-                    : 'bg-gradient-to-br from-red-600 to-red-700 text-white'
+                    : d.completed ? 'bg-zinc-50 text-zinc-500'
+                    : 'bg-gradient-to-br from-red-800 to-red-950 text-white'
                 }`}>
                   {!locked && !d.completed && <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />}
                   <span className="text-xs font-semibold uppercase tracking-widest opacity-80">Day</span>
                   <span className="font-brand text-4xl font-bold leading-none">{d.dayNumber}</span>
-                  {d.completed && <CheckCircle2 className="absolute right-3 top-3 h-5 w-5 text-green-600" />}
+                  {d.completed && <CheckCircle2 className="absolute right-3 top-3 h-5 w-5 text-emerald-600" />}
                   {locked && <Lock className="absolute right-3 top-3 h-4 w-4" />}
                 </div>
 
@@ -131,10 +131,10 @@ export function DashboardHome({ firstName, completed, total, resume, days, child
                   {d.description && <p className="mt-0.5 line-clamp-1 text-sm text-zinc-500">{d.description}</p>}
 
                   <div className="mt-4">
-                    <p className={`text-xs ${s.tone === 'done' ? 'text-green-700' : 'text-zinc-500'}`}>{s.label}</p>
+                    <p className={`text-xs ${s.tone === 'done' ? 'text-emerald-700' : 'text-zinc-500'}`}>{s.label}</p>
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-zinc-100">
                       <div
-                        className={`h-full rounded-full ${s.tone === 'done' ? 'bg-green-500' : 'bg-red-600'}`}
+                        className={`h-full rounded-full ${s.tone === 'done' ? 'bg-emerald-400' : 'bg-red-800'}`}
                         style={{ width: `${s.pct}%` }}
                       />
                     </div>
@@ -148,7 +148,7 @@ export function DashboardHome({ firstName, completed, total, resume, days, child
                         Review
                       </Link>
                     ) : (
-                      <Link href={`/day/${d.dayNumber}`} className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700">
+                      <Link href={`/day/${d.dayNumber}`} className="inline-flex items-center gap-1.5 rounded-lg bg-red-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-900">
                         {d.visited || d.attempts > 0 ? 'Continue' : 'Start day'} <ArrowRight className="h-4 w-4" />
                       </Link>
                     )}

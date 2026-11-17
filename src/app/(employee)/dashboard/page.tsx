@@ -109,7 +109,7 @@ export default async function DashboardPage() {
         <div className="space-y-2">
           {announcements.map(a => (
             <div key={String(a._id)} className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3">
-              <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+              <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-red-800" />
               <div>
                 <p className="text-sm font-semibold text-zinc-900">{a.title}</p>
                 {a.body && <p className="mt-0.5 whitespace-pre-line text-sm text-zinc-500">{a.body}</p>}
@@ -122,11 +122,11 @@ export default async function DashboardPage() {
       {/* Quiz deadline */}
       {!allDone && quizWindow.deadline && nextDay && (
         quizWindow.overdueMs > 0 ? (
-          <Link href={`/day/${nextDay}`} className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 transition-colors hover:bg-red-100">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+          <Link href={`/day/${nextDay}`} className="flex items-start gap-3 rounded-xl border border-red-100 bg-white px-4 py-3 transition-colors hover:bg-red-50/50">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-700" />
             <div>
               <p className="text-sm font-semibold text-red-800">Day {nextDay} quiz is overdue by {formatDuration(quizWindow.overdueMs)}</p>
-              <p className="mt-0.5 text-xs text-red-700">Attempt it as soon as possible. Your admin can see missed deadlines.</p>
+              <p className="mt-0.5 text-xs text-zinc-500">Attempt it as soon as possible. Your admin can see missed deadlines.</p>
             </div>
           </Link>
         ) : (
