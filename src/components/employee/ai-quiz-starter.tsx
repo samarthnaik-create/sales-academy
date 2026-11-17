@@ -1,8 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { Sparkles, Loader2, ShieldAlert } from 'lucide-react'
 import { QuizEngine } from './quiz-engine'
-import { QUIZ_RULES as RULES } from '@/lib/quiz-config'
+import { QuizRules, QuizLoading } from './quiz-screens'
 
 interface Props {
   course: { id: string; title: string; dayNumber: number }
@@ -12,8 +11,15 @@ interface Props {
   hasNextDay?: boolean
 }
 
+const STEPS = [
+  'Reading today’s lesson…',
+  'Writing your questions…',
+  'Checking every answer…',
+  'Shuffling the questions…',
+  'Almost ready…',
+]
+
 export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNextDay }: Props) {
-  const [accepted, setAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [questions, setQuestions] = useState<{ id: string; question: string; options: string[]; order_index: number }[] | null>(null)
   const [attemptId, setAttemptId] = useState<string | null>(null)
@@ -33,7 +39,7 @@ export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNex
       setQuestions(data.questions)
       setAttemptId(data.attemptId)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate quiz')
+      setError(err instanceof Error ? err.message : 'Failed to prepare the quiz')
     } finally {
       setLoading(false)
     }
@@ -51,54 +57,23 @@ export function AiQuizStarter({ course, totalQuestions, progress, userId, hasNex
     )
   }
 
-  if (!accepted) {
+  if (loading) {
+    const wait = totalQuestions > 20 ? 'up to a minute' : totalQuestions > 10 ? 'about 15–30 seconds' : 'about 10–15 seconds'
     return (
-      <div className="max-w-lg mx-auto">
-        <div className="bg-white rounded-2xl border-2 border-red-200 p-7">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center shrink-0">
-              <ShieldAlert className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h2 className="font-bold text-zinc-900">Before You Begin</h2>
-              <p className="text-zinc-400 text-xs">Read and accept the exam conditions</p>
-            </div>
-          </div>
-          <ul className="space-y-3 mb-8">
-            {RULES.map((rule, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-zinc-700">
-                <span className="w-5 h-5 rounded-full bg-red-100 text-red-600 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-                {rule}
-              </li>
-            ))}
-          </ul>
-          <button onClick={() => setAccepted(true)} className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
-            I Understand — Start Quiz
-          </button>
-        </div>
-      </div>
+      <QuizLoading
+        title={`Preparing your ${totalQuestions} questions`}
+        steps={STEPS}
+        hint={`This takes ${wait}. Please stay on this page.`}
+      />
     )
   }
 
   return (
-    <div className="max-w-lg mx-auto">
-      <div className="bg-white rounded-2xl border border-zinc-200 p-10 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-red-600 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-red-100">
-          <Sparkles className="h-7 w-7 text-white" />
-        </div>
-        <h2 className="text-xl font-bold text-zinc-900 mb-2">AI-Generated Quiz</h2>
-        <p className="text-zinc-500 text-sm mb-1">Gemini AI will generate <strong>{totalQuestions} unique questions</strong> just for you.</p>
-        <p className="text-zinc-400 text-xs mb-1">Pass 90% to unlock the next day</p>
-        <p className="text-zinc-400 text-xs mb-1">Every attempt gives different questions — no two employees see the same quiz.</p>
-        <p className="text-zinc-400 text-xs mb-8">Generating counts as an attempt, even if you leave before submitting.</p>
-
-        {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg mb-4">{error}</div>}
-
-        <button onClick={generate} disabled={loading} className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium px-6 py-2.5 rounded-lg text-sm flex items-center gap-2 mx-auto transition-colors">
-          {loading ? <><Loader2 className="h-4 w-4 animate-spin" />Generating…</> : <><Sparkles className="h-4 w-4" />Generate My Quiz</>}
-        </button>
-        {loading && <p className="text-zinc-400 text-xs mt-3">{totalQuestions > 20 ? 'This can take up to a minute…' : totalQuestions > 10 ? 'This takes about 15–30 seconds…' : 'This takes about 10–15 seconds…'}</p>}
-      </div>
-    </div>
+    <QuizRules
+      dayNumber={course.dayNumber}
+      note={`${totalQuestions} questions, freshly written for you each attempt. Starting counts as an attempt, even if you leave before submitting.`}
+      error={error}
+      onStart={generate}
+    />
   )
 }

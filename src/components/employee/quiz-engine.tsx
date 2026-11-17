@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, CheckCircle2, XCircle, Loader2, ShieldAlert, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { MAX_TAB_SWITCHES as MAX_VIOLATIONS, QUIZ_RULES as RULES, PASS_THRESHOLD } from '@/lib/quiz-config'
+import { QuizRules, QuizLoading } from './quiz-screens'
+import { MAX_TAB_SWITCHES as MAX_VIOLATIONS, PASS_THRESHOLD } from '@/lib/quiz-config'
 
 interface QuizQuestion {
   id: string
@@ -213,33 +214,14 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
 
   // ── Intro ───────────────────────────────────────────────────
   if (state === 'intro') {
+    if (starting) return <QuizLoading hint="This only takes a moment." />
     return (
-      <div className="max-w-lg mx-auto">
-        <div className="bg-white rounded-2xl border-2 border-red-200 p-7">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center shrink-0">
-              <ShieldAlert className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h2 className="font-bold text-zinc-900">Before You Begin</h2>
-              <p className="text-zinc-400 text-xs">Read and accept the exam conditions</p>
-            </div>
-          </div>
-          <ul className="space-y-3 mb-8">
-            {RULES.map((rule, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-zinc-700">
-                <span className="w-5 h-5 rounded-full bg-red-100 text-red-600 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-                {rule}
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-zinc-400 mb-3">Starting counts as an attempt, even if you leave before submitting.</p>
-          {startError && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg mb-3">{startError}</div>}
-          <button onClick={start} disabled={starting} className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
-            {starting ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting…</> : 'I Understand — Start Quiz'}
-          </button>
-        </div>
-      </div>
+      <QuizRules
+        dayNumber={course.dayNumber}
+        note="Starting counts as an attempt, even if you leave before submitting."
+        error={startError}
+        onStart={start}
+      />
     )
   }
 
@@ -249,7 +231,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
     return (
       <div className="max-w-2xl mx-auto">
         {/* Banner */}
-        <div className={cn('rounded-2xl p-6 mb-6 text-white text-center', passed ? 'bg-green-600' : 'bg-red-600')}>
+        <div className={cn('rounded-2xl p-6 mb-6 text-white text-center', passed ? 'bg-gradient-to-br from-emerald-600 to-emerald-700' : 'bg-gradient-to-br from-red-800 to-red-950')}>
           <div className="text-4xl mb-2">{passed ? '🏆' : '😔'}</div>
           <h2 className="text-xl font-bold mb-1">{passed ? 'Congratulations!' : 'Almost there!'}</h2>
           <p className={passed ? 'text-green-100 text-sm' : 'text-red-100 text-sm'}>
@@ -311,7 +293,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
         <div className="flex gap-3 justify-center pb-8">
           {passed ? (
             <>
-              {hasNextDay && <button onClick={() => router.push(`/day/${course.dayNumber + 1}`)} className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Next Day →</button>}
+              {hasNextDay && <button onClick={() => router.push(`/day/${course.dayNumber + 1}`)} className="bg-red-800 hover:bg-red-900 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Next Day →</button>}
               <button onClick={() => router.push('/dashboard')} className="border border-zinc-300 text-zinc-700 hover:bg-zinc-50 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">
                 {hasNextDay ? 'Dashboard' : '🎉 Back to Dashboard'}
               </button>
@@ -324,7 +306,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
                 violationsRef.current = 0; setViolations(0); setShowWarning(false)
                 attemptIdRef.current = undefined; finishedRef.current = false; setLeftEarly(false)
                 setState('intro')
-              }} className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Retry Quiz</button>
+              }} className="bg-red-800 hover:bg-red-900 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Retry Quiz</button>
               <button onClick={() => router.push(`/day/${course.dayNumber}`)} className="border border-zinc-300 text-zinc-700 hover:bg-zinc-50 text-sm font-medium px-5 py-2.5 rounded-lg transition-colors">Review Lesson</button>
             </>
           )}
@@ -421,7 +403,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
                 {confirm === 'unanswered' ? 'Go back' : 'Stay'}
               </button>
               <button onClick={() => doSubmit(answers, violationsRef.current, confirm === 'leave')}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors">
+                className="flex-1 bg-red-800 hover:bg-red-900 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors">
                 {confirm === 'unanswered' ? 'Submit anyway' : 'Leave & submit'}
               </button>
             </div>
@@ -447,7 +429,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
           <span className="text-xs text-zinc-400">{answeredCount}/{total} answered</span>
         </div>
         <div className="h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-          <div className="h-full bg-red-600 rounded-full transition-all" style={{ width: `${(answeredCount / total) * 100}%` }} />
+          <div className="h-full bg-red-800 rounded-full transition-all" style={{ width: `${(answeredCount / total) * 100}%` }} />
         </div>
         <p className="text-zinc-400 text-xs mt-1">Pass score: {PASS_THRESHOLD}% · Unlimited retries</p>
       </div>
@@ -464,8 +446,8 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
             return (
               <button key={i} onClick={() => selectAnswer(current.id, opt)}
                 className={cn('w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all',
-                  selected ? 'border-blue-500 bg-blue-50 text-zinc-900' : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-700')}>
-                <span className={cn('inline-flex items-center justify-center w-6 h-6 rounded-full text-xs mr-3 shrink-0', selected ? 'bg-blue-600 text-white font-bold' : 'bg-zinc-100 text-zinc-500')}>
+                  selected ? 'border-red-800 bg-red-50/60 text-zinc-900' : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-700')}>
+                <span className={cn('inline-flex items-center justify-center w-6 h-6 rounded-full text-xs mr-3 shrink-0', selected ? 'bg-red-800 text-white font-bold' : 'bg-zinc-100 text-zinc-500')}>
                   {String.fromCharCode(65 + i)}
                 </span>
                 {opt}
@@ -483,7 +465,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
           {questions.map((q, i) => (
             <button key={q.id} onClick={() => setCurrentIndex(i)}
               className={cn('w-7 h-7 rounded-full text-xs font-medium transition-colors',
-                i === currentIndex ? 'bg-blue-600 text-white' : answers[q.id] ? 'bg-blue-100 text-blue-700' : 'bg-zinc-100 text-zinc-500')}>
+                i === currentIndex ? 'bg-red-800 text-white' : answers[q.id] ? 'bg-red-100 text-red-800' : 'bg-zinc-100 text-zinc-500')}>
               {i + 1}
             </button>
           ))}
@@ -492,7 +474,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
         {currentIndex < total - 1
           ? <button onClick={() => setCurrentIndex(i => i + 1)} className="text-sm text-zinc-500 hover:text-zinc-900 border border-zinc-200 px-4 py-2 rounded-lg transition-colors">Next →</button>
           : <button onClick={submit} disabled={state === 'submitting'}
-              className="text-sm font-medium bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
+              className="text-sm font-medium bg-red-800 hover:bg-red-900 disabled:opacity-50 text-white px-5 py-2 rounded-lg transition-colors flex items-center gap-2">
               {state === 'submitting' ? <><Loader2 className="h-4 w-4 animate-spin" />Submitting…</> : 'Submit Quiz'}
             </button>
         }
