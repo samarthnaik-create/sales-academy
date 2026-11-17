@@ -101,7 +101,7 @@ export default function LoginPage() {
       </main>
 
       <footer className="py-6 text-center text-xs text-zinc-400">
-        <span className="font-brand font-bold text-red-600">Sales Academy</span> by <span className="font-medium text-zinc-500">Mohidin Properties</span>
+        <span className="font-brand font-bold text-red-600">Sales Academy</span> by <span className="font-brand font-bold text-[#1a75bb]">Mohidin Properties</span>
         <span className="mx-1.5">·</span>© {new Date().getFullYear()}
       </footer>
     </div>
