@@ -345,21 +345,32 @@ export function LessonViewer({ course, quiz, start }: Props) {
                 {topics.map((t, ti) => {
                   const topicRead = t.modules.filter((_, mi) => read.has(key(ti, mi))).length
                   const open = !named || openTopics.has(ti)
+                  const topicDone = topicRead === t.modules.length
                   return (
-                    <div key={ti} className="border-b border-zinc-100 last:border-b-0">
+                    <div key={ti} className="border-b border-zinc-200 last:border-b-0">
+                      {/* Topic: section header */}
                       {named && (
-                        <button onClick={() => toggleTopic(ti)} className="flex w-full items-center justify-between gap-3 px-5 py-3 text-left hover:bg-zinc-50">
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-semibold text-zinc-900">{t.title || `Topic ${ti + 1}`}</span>
-                            <span className="text-xs text-zinc-400">{topicRead}/{t.modules.length} read</span>
+                        <button
+                          onClick={() => toggleTopic(ti)}
+                          className="flex w-full items-center gap-3 bg-zinc-50 px-4 py-3 text-left transition-colors hover:bg-zinc-100"
+                        >
+                          <span className={cn(
+                            'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                            topicDone ? 'bg-emerald-600 text-white' : ti === pos.ti ? 'bg-red-800 text-white' : 'bg-white text-zinc-500 ring-1 ring-zinc-300',
+                          )}>
+                            {topicDone ? <CheckCircle2 className="h-4 w-4" /> : ti + 1}
                           </span>
-                          {topicRead === t.modules.length
-                            ? <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                            : <ChevronDown className={cn('h-4 w-4 shrink-0 text-zinc-400 transition-transform', open && 'rotate-180')} />}
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[10px] font-semibold uppercase tracking-widest text-zinc-400">Topic {ti + 1}</span>
+                            <span className="block truncate text-sm font-semibold text-zinc-900">{t.title || `Topic ${ti + 1}`}</span>
+                          </span>
+                          <span className="shrink-0 text-xs text-zinc-400">{topicRead}/{t.modules.length}</span>
+                          <ChevronDown className={cn('h-4 w-4 shrink-0 text-zinc-400 transition-transform', open && 'rotate-180')} />
                         </button>
                       )}
+                      {/* Lessons: indented under their topic, joined by a line */}
                       {open && (
-                        <ul className="pb-2">
+                        <ul className={cn('py-1.5', named && 'ml-[1.85rem] border-l-2 border-zinc-200')}>
                           {t.modules.map((m, mi) => {
                             const k = key(ti, mi)
                             const active = ti === pos.ti && mi === pos.mi
@@ -369,14 +380,17 @@ export function LessonViewer({ course, quiz, start }: Props) {
                                 <button
                                   onClick={() => go(ti, mi)}
                                   className={cn(
-                                    'flex w-full items-start gap-3 border-l-[3px] px-5 py-2 text-left text-sm transition-colors',
+                                    '-ml-0.5 flex w-[calc(100%+2px)] items-start gap-2.5 border-l-2 py-1.5 pl-4 pr-4 text-left text-[13px] transition-colors',
                                     active ? 'border-red-800 bg-red-50/70 text-red-900' : 'border-transparent text-zinc-600 hover:bg-zinc-50',
                                   )}
                                 >
                                   {done
-                                    ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                                    : <Circle className={cn('mt-0.5 h-4 w-4 shrink-0', active ? 'text-red-800' : 'text-zinc-300')} />}
-                                  <span className={cn('min-w-0 flex-1', active && 'font-medium')}>{m.title}</span>
+                                    ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                                    : <Circle className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', active ? 'text-red-800' : 'text-zinc-300')} />}
+                                  <span className={cn('min-w-0 flex-1 leading-snug', active && 'font-medium')}>
+                                    {named && <span className="mr-1 text-zinc-400">{ti + 1}.{mi + 1}</span>}
+                                    {m.title}
+                                  </span>
                                   {notes[k]?.trim() && <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" />}
                                 </button>
                               </li>
