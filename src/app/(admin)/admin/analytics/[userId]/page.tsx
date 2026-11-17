@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import mongoose from 'mongoose'
-import Link from 'next/link'
+import { PageHeader } from '@/components/ui/page-header'
 import { PASS_THRESHOLD } from '@/lib/quiz-config'
 import { notFound } from 'next/navigation'
 import { requireAdmin } from '@/lib/auth'
@@ -14,7 +14,7 @@ import { MAX_TAB_SWITCHES } from '@/lib/quiz-config'
 import {
   computeQuizWindow, trainingFinishedAt, nextIncompleteDay, attemptLateness, formatDuration, WINDOW_HOURS,
 } from '@/lib/quiz-window'
-import { ArrowLeft, AlertCircle, Trophy, CheckCircle2, Clock, Lock } from 'lucide-react'
+import { AlertCircle, Trophy, CheckCircle2, Clock, Lock } from 'lucide-react'
 
 interface Props { params: Promise<{ userId: string }> }
 
@@ -100,31 +100,24 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
   ]
 
   return (
-    <div className="max-w-5xl">
-      <Link href="/admin/analytics" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors mb-5">
-        <ArrowLeft className="h-4 w-4" /> Back to Analytics
-      </Link>
-
-      {/* Header */}
-      <div className="flex items-start gap-4 mb-6">
-        <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-          <span className="text-red-700 text-lg font-bold">{emp.name.trim().charAt(0)}</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-zinc-900">{emp.name}</h1>
-          <p className="text-sm text-zinc-400">@{emp.username} · {emp.email} · joined {fmtDate(emp.createdAt)}</p>
-          <div className="flex items-center gap-2 mt-2">
-            <div className="h-1.5 w-40 bg-zinc-100 rounded-full overflow-hidden">
-              <div className={`h-full rounded-full ${pct === 100 ? 'bg-emerald-500' : 'bg-red-800'}`} style={{ width: `${pct}%` }} />
-            </div>
-            <span className="text-xs text-zinc-500">{pct}% complete</span>
+    <div className="space-y-6">
+      <PageHeader
+        back={{ href: '/admin/analytics', label: 'Back to Analytics' }}
+        eyebrow="Employee report"
+        title={emp.name}
+        subtitle={<>@{emp.username}{emp.email.endsWith('@noemail.local') ? '' : ` · ${emp.email}`} · joined {fmtDate(emp.createdAt)}</>}
+      >
+        <div className="flex items-center gap-3">
+          <div className="h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-white/20">
+            <div className="h-full rounded-full bg-white" style={{ width: `${pct}%` }} />
           </div>
+          <span className="shrink-0 text-sm text-red-100/80">{pct}% complete</span>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Current status, same rules as the employee dashboard */}
       {finishedAt ? (
-        <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-6">
+        <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
           <Trophy className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
           <p className="text-sm font-semibold text-green-800">
             Training complete on {fmtDate(finishedAt)}
@@ -132,7 +125,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
         </div>
       ) : quizWindow.deadline && nextDay ? (
         quizWindow.overdueMs > 0 ? (
-          <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-6">
+          <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
             <AlertCircle className="h-4 w-4 text-red-800 shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-red-800">Overdue: Day {nextDay} quiz is {formatDuration(quizWindow.overdueMs)} late</p>
@@ -140,7 +133,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
             </div>
           </div>
         ) : (
-          <div className="flex items-start gap-3 bg-white border border-zinc-200 rounded-xl px-4 py-3 mb-6">
+          <div className="flex items-start gap-3 bg-white border border-zinc-200 rounded-xl px-4 py-3">
             <Clock className="h-4 w-4 text-zinc-500 shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-zinc-900">On track: Day {nextDay} quiz due in {formatDuration(quizWindow.remainingMs)}</p>
@@ -149,16 +142,16 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
           </div>
         )
       ) : (
-        <div className="flex items-start gap-3 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 mb-6">
+        <div className="flex items-start gap-3 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3">
           <Clock className="h-4 w-4 text-zinc-400 shrink-0 mt-0.5" />
           <p className="text-sm text-zinc-500">Not started yet. The {WINDOW_HOURS}h clock starts after their first quiz attempt.</p>
         </div>
       )}
 
       {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {cards.map(c => (
-          <div key={c.label} className="bg-white rounded-xl border border-zinc-200 p-4">
+          <div key={c.label} className="bg-white rounded-2xl border border-zinc-200 p-4">
             <p className={`text-2xl font-bold ${c.color ?? 'text-zinc-900'}`}>{c.value}</p>
             <p className="text-xs text-zinc-400 mt-0.5">{c.label}</p>
           </div>
@@ -166,7 +159,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
       </div>
 
       {/* Day by day */}
-      <div className="bg-white rounded-xl border border-zinc-200 mb-6">
+      <div className="bg-white rounded-2xl border border-zinc-200">
         <div className="px-5 py-4 border-b border-zinc-100">
           <h2 className="font-semibold text-zinc-900">Day by Day</h2>
           <p className="text-xs text-zinc-400 mt-0.5">When each day was attempted and completed, with scores and attempts</p>
@@ -230,7 +223,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
       </div>
 
       {/* Attempt history */}
-      <div className="bg-white rounded-xl border border-zinc-200 mb-6">
+      <div className="bg-white rounded-2xl border border-zinc-200">
         <div className="px-5 py-4 border-b border-zinc-100">
           <h2 className="font-semibold text-zinc-900">Attempt History</h2>
           <p className="text-xs text-zinc-400 mt-0.5">Every quiz attempt, newest first</p>

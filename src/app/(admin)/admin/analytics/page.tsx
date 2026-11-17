@@ -7,6 +7,7 @@ import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
 import { QuizAttempt, isSubmitted } from '@/models/QuizAttempt'
 import Link from 'next/link'
+import { PageHeader } from '@/components/ui/page-header'
 import { PASS_THRESHOLD, MAX_TAB_SWITCHES } from '@/lib/quiz-config'
 import { computeQuizWindow, trainingFinishedAt, formatDuration, WINDOW_HOURS } from '@/lib/quiz-window'
 import { Trophy, CheckCircle2, TrendingUp, Users, AlertCircle } from 'lucide-react'
@@ -147,16 +148,13 @@ export default async function AnalyticsPage() {
   }
 
   return (
-    <div className="max-w-5xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-900">Analytics</h1>
-        <p className="text-zinc-500 text-sm mt-1">Training progress and performance across your team</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader title="Analytics" subtitle="Training progress and performance across your team" />
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {summaryCards.map(c => (
-          <div key={c.label} className="bg-white rounded-xl border border-zinc-200 p-5">
+          <div key={c.label} className="bg-white rounded-2xl border border-zinc-200 p-5">
             <c.icon className="h-5 w-5 text-zinc-400" />
             <p className="mt-4 text-3xl font-semibold text-zinc-900">{c.value}</p>
             <p className="mt-0.5 text-sm text-zinc-600">{c.label}</p>
@@ -166,7 +164,7 @@ export default async function AnalyticsPage() {
 
       {/* Overdue employees alert */}
       {overdue.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 mb-6 flex items-start gap-3">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 flex items-start gap-3">
           <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-amber-800">
@@ -180,7 +178,7 @@ export default async function AnalyticsPage() {
       )}
 
       {/* Employee breakdown */}
-      <div className="bg-white rounded-xl border border-zinc-200 mb-6">
+      <div className="bg-white rounded-2xl border border-zinc-200">
         <div className="px-5 py-4 border-b border-zinc-100">
           <h2 className="font-semibold text-zinc-900">Employee Progress</h2>
           <p className="text-xs text-zinc-400 mt-0.5">Per-employee completion, scores and activity. Click a name for the full day-by-day report.</p>
@@ -280,7 +278,7 @@ export default async function AnalyticsPage() {
       </div>
 
       {/* Course breakdown */}
-      <div className="bg-white rounded-xl border border-zinc-200">
+      <div className="bg-white rounded-2xl border border-zinc-200">
         <div className="px-5 py-4 border-b border-zinc-100">
           <h2 className="font-semibold text-zinc-900">Course Performance</h2>
           <p className="text-xs text-zinc-400 mt-0.5">How employees are performing on each day</p>

@@ -84,9 +84,9 @@ export function AnnouncementManager({ announcements: initial, employees }: { ann
   }
 
   return (
-    <div className="space-y-6">
+    <div className="grid items-start gap-6 lg:grid-cols-2">
       {/* Create form */}
-      <div className="bg-white rounded-xl border border-zinc-200 p-6 space-y-4">
+      <div className="bg-white rounded-2xl border border-zinc-200 p-6 space-y-4">
         <h2 className="font-semibold text-zinc-900">New Announcement</h2>
         <div>
           <label className="block text-sm font-medium text-zinc-700 mb-1.5">Title <span className="text-red-500">*</span></label>
@@ -197,7 +197,7 @@ export function AnnouncementManager({ announcements: initial, employees }: { ann
       </div>
 
       {/* List */}
-      <div className="bg-white rounded-xl border border-zinc-200">
+      <div className="bg-white rounded-2xl border border-zinc-200">
         <div className="px-5 py-4 border-b border-zinc-100">
           <h2 className="font-semibold text-zinc-900">Announcements</h2>
         </div>

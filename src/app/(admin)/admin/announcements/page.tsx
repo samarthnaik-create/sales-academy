@@ -6,6 +6,7 @@ import { Announcement } from '@/models/Announcement'
 import { User } from '@/models/User'
 import { isRealEmail } from '@/lib/email'
 import { AnnouncementManager } from '@/components/admin/announcement-manager'
+import { PageHeader } from '@/components/ui/page-header'
 
 export default async function AnnouncementsPage() {
   await requireAdmin()
@@ -27,11 +28,8 @@ export default async function AnnouncementsPage() {
     audience: a.audience?.length ? a.audience.map((id: unknown) => nameById[String(id)] ?? 'Removed employee') : null,
   }))
   return (
-    <div className="max-w-2xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-900">Announcements</h1>
-        <p className="text-zinc-500 text-sm mt-1">Post notices that appear on every employee&apos;s dashboard, and optionally email them</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader title="Announcements" subtitle="Post notices on employees' dashboards, and optionally email them" />
       <AnnouncementManager announcements={announcements} employees={people} />
     </div>
   )

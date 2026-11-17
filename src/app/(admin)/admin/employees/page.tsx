@@ -6,6 +6,7 @@ import { User } from '@/models/User'
 import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
 import { EmployeeActions } from '@/components/admin/employee-actions'
+import { PageHeader } from '@/components/ui/page-header'
 import { EditEmployee } from '@/components/admin/edit-employee'
 import { CheckCircle2 } from 'lucide-react'
 
@@ -38,22 +39,20 @@ export default async function EmployeesPage() {
   }))
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Employees</h1>
-          <p className="text-zinc-500 text-sm mt-1">{employees.length} registered employees</p>
-        </div>
-        <EmployeeActions mode="add" />
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Employees"
+        subtitle={`${employees.length} ${employees.length === 1 ? 'employee' : 'employees'} · manage logins and see progress`}
+        actions={<EmployeeActions mode="add" />}
+      />
 
       {employees.length === 0 ? (
-        <div className="bg-white rounded-xl border border-zinc-200 py-16 text-center">
+        <div className="bg-white rounded-2xl border border-zinc-200 py-16 text-center">
           <p className="font-medium text-zinc-500">No employees yet</p>
           <p className="text-sm mt-1 text-zinc-400">Click &quot;Add Employee&quot; above to get started</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

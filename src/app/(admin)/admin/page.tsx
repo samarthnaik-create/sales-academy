@@ -7,6 +7,7 @@ import { Course } from '@/models/Course'
 import { QuizAttempt, isSubmitted } from '@/models/QuizAttempt'
 import { Progress } from '@/models/Progress'
 import Link from 'next/link'
+import { PageHeader, bandButton, bandButtonGhost } from '@/components/ui/page-header'
 import { Users, BookOpen, CheckCircle2, Trophy, ArrowUpRight, UserPlus, Megaphone, ChevronRight } from 'lucide-react'
 
 function timeAgo(date: Date, now: number) {
@@ -74,24 +75,16 @@ export default async function AdminPage() {
   }))
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">{greeting(now)}, {admin.name?.split(' ')[0] ?? 'Admin'}</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            {now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Kolkata' })}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/admin/employees" className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50">
-            <UserPlus className="h-4 w-4" /> Add employee
-          </Link>
-          <Link href="/admin/announcements" className="inline-flex items-center gap-1.5 rounded-lg bg-red-800 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-900">
-            <Megaphone className="h-4 w-4" /> New announcement
-          </Link>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Kolkata' })}
+        title={`${greeting(now)}, ${admin.name?.split(' ')[0] ?? 'Admin'}`}
+        subtitle="Here's how your team's training is going"
+        actions={<>
+          <Link href="/admin/employees" className={bandButtonGhost}><UserPlus className="h-4 w-4" /> Add employee</Link>
+          <Link href="/admin/announcements" className={bandButton}><Megaphone className="h-4 w-4" /> New announcement</Link>
+        </>}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -99,7 +92,7 @@ export default async function AdminPage() {
           <Link
             key={s.label}
             href={s.href}
-            className="group rounded-xl border border-zinc-200 bg-white p-5 transition-all duration-200 hover:border-red-200 hover:shadow-md"
+            className="group rounded-2xl border border-zinc-200 bg-white p-5 transition-all duration-200 hover:border-red-200 hover:shadow-md"
           >
             <div className="flex items-center justify-between text-zinc-400">
               <s.icon className="h-5 w-5 transition-colors group-hover:text-red-800" />
@@ -113,7 +106,7 @@ export default async function AdminPage() {
       </div>
 
       {/* Recent attempts */}
-      <section className="rounded-xl border border-zinc-200 bg-white">
+      <section className="rounded-2xl border border-zinc-200 bg-white">
           <div className="flex items-center justify-between px-5 py-4">
             <h2 className="font-semibold text-zinc-900">Recent quiz attempts</h2>
             <Link href="/admin/analytics" className="inline-flex items-center text-xs font-medium text-zinc-500 hover:text-red-800">

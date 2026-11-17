@@ -6,6 +6,7 @@ import { Course } from '@/models/Course'
 import { Quiz } from '@/models/Quiz'
 import { notFound } from 'next/navigation'
 import { CourseEditor } from '@/components/admin/course-editor'
+import { isId } from '@/lib/validate'
 
 interface Props { params: Promise<{ id: string }> }
 
@@ -17,6 +18,7 @@ export default async function CoursePage({ params }: Props) {
   let course = null
 
   if (!isNew) {
+    if (!isId(id)) notFound()
     await connectDB()
     const courseDoc = await Course.findById(id).lean()
     if (!courseDoc) notFound()

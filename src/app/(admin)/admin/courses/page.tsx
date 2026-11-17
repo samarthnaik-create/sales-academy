@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/mongoose'
 import { Course } from '@/models/Course'
 import { Quiz } from '@/models/Quiz'
 import Link from 'next/link'
+import { PageHeader, bandButton } from '@/components/ui/page-header'
 import { Plus, BookOpen, FileQuestion } from 'lucide-react'
 
 export default async function CoursesPage() {
@@ -30,19 +31,15 @@ export default async function CoursesPage() {
   }))
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Courses</h1>
-          <p className="text-zinc-500 text-sm mt-1">{courses.length} {courses.length === 1 ? 'day' : 'days'} total</p>
-        </div>
-        <Link href="/admin/courses/new" className="inline-flex items-center gap-2 bg-red-800 hover:bg-red-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-          <Plus className="h-4 w-4" /> Add Course
-        </Link>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Courses"
+        subtitle={`${courses.length} training ${courses.length === 1 ? 'day' : 'days'} · lessons and quizzes`}
+        actions={<Link href="/admin/courses/new" className={bandButton}><Plus className="h-4 w-4" /> Add day</Link>}
+      />
 
       {courses.length === 0 ? (
-        <div className="bg-white rounded-xl border border-zinc-200 py-16 text-center text-zinc-400">
+        <div className="bg-white rounded-2xl border border-zinc-200 py-16 text-center text-zinc-400">
           <BookOpen className="h-8 w-8 mx-auto mb-3 opacity-40" />
           <p className="font-medium">No courses yet</p>
           <p className="text-sm mt-1">Add your first course to get started</p>
@@ -50,7 +47,7 @@ export default async function CoursesPage() {
       ) : (
         <div className="space-y-3">
           {courses.map(c => (
-            <Link key={c.id} href={`/admin/courses/${c.id}`} className="group bg-white rounded-xl border border-zinc-200 p-5 flex items-center justify-between transition-[border-color,box-shadow] hover:border-red-200 hover:shadow-md">
+            <Link key={c.id} href={`/admin/courses/${c.id}`} className="group bg-white rounded-2xl border border-zinc-200 p-5 flex items-center justify-between transition-[border-color,box-shadow] hover:border-red-200 hover:shadow-md">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center shrink-0 transition-colors group-hover:bg-red-800">
                   <span className="text-red-800 font-bold text-sm transition-colors group-hover:text-white">{c.dayNumber}</span>

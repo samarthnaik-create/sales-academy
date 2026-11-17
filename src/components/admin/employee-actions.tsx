@@ -1,4 +1,5 @@
 'use client'
+import { bandButton } from '@/components/ui/page-header'
 import { useState } from 'react'
 import { UserPlus, KeyRound, X, Trash2, Eye, EyeOff } from 'lucide-react'
 
@@ -60,8 +61,8 @@ export function EmployeeActions({ mode, employeeId, employeeName }: Props) {
   return (
     <>
       {mode === 'add' ? (
-        <button onClick={openModal} className="inline-flex items-center gap-2 bg-red-800 hover:bg-red-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-          <UserPlus className="h-4 w-4" /> Add Employee
+        <button onClick={openModal} className={bandButton}>
+          <UserPlus className="h-4 w-4" /> Add employee
         </button>
       ) : (
         <div className="flex items-center gap-2">

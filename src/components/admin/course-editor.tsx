@@ -1,7 +1,8 @@
 'use client'
+import { PageHeader, bandButtonGhost } from '@/components/ui/page-header'
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, Trash2, Upload, Loader2, ChevronLeft, ChevronRight, FolderOpen, FileText } from 'lucide-react'
+import { Plus, Trash2, Upload, Loader2, ChevronLeft, ChevronRight, FolderOpen, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { MIN_QUESTIONS, MAX_QUESTIONS, DEFAULT_QUESTIONS, clampQuestionCount } from '@/lib/quiz-config'
@@ -206,23 +207,22 @@ export function CourseEditor({ course }: { course: Course | null }) {
   const usesAi = aiTopup || quizzes.length === 0
 
   return (
-    <div className="max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <Link href="/admin/courses" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Back to Courses
-        </Link>
-        {!isNew && (
-          <button onClick={deleteCourse} className="text-sm text-red-500 hover:text-red-900 flex items-center gap-1.5 transition-colors">
-            <Trash2 className="h-4 w-4" /> Delete Course
+    <div className="space-y-6">
+      <PageHeader
+        back={{ href: '/admin/courses', label: 'Back to Courses' }}
+        eyebrow={isNew ? 'New training day' : `Day ${course!.dayNumber}`}
+        title={isNew ? 'Add a day' : course!.title || 'Edit day'}
+        subtitle="Lessons, videos and the quiz for this day"
+        actions={!isNew ? (
+          <button onClick={deleteCourse} className={bandButtonGhost}>
+            <Trash2 className="h-4 w-4" /> Delete day
           </button>
-        )}
-      </div>
-
-      <h1 className="text-2xl font-bold text-zinc-900 mb-6">{isNew ? 'New Course' : 'Edit Course'}</h1>
+        ) : undefined}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Course details */}
-        <div className="bg-white rounded-xl border border-zinc-200 p-6 space-y-4">
+        <div className="bg-white rounded-2xl border border-zinc-200 p-6 space-y-4">
           <h2 className="font-semibold text-zinc-900">Course Details</h2>
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1.5">Day Number</label>
@@ -280,7 +280,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
         </div>
 
         {/* Topics + Modules */}
-        <div className="bg-white rounded-xl border border-zinc-200 p-6">
+        <div className="bg-white rounded-2xl border border-zinc-200 p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -519,7 +519,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
         </div>
 
         {/* Quiz questions */}
-        <div className="bg-white rounded-xl border border-zinc-200 p-6">
+        <div className="bg-white rounded-2xl border border-zinc-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="font-semibold text-zinc-900">Quiz Questions</h2>
