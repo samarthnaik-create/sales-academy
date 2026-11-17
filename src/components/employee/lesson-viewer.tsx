@@ -260,7 +260,7 @@ export function LessonViewer({ course, quiz, start }: Props) {
               <div className="px-6 py-6 sm:px-8">
                 {current.html ? (
                   <div
-                    className="text-[15px] leading-7 text-zinc-700 [&_a]:text-red-800 [&_a]:underline [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-zinc-900 [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:font-semibold [&_h3]:text-zinc-900 [&_img]:my-4 [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-xl [&_li]:pl-1 [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:space-y-1.5 [&_ol]:pl-6 [&_p]:mb-4 [&_strong]:font-semibold [&_strong]:text-zinc-900 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-6"
+                    className="text-[15px] leading-7 text-zinc-700 [&_a]:text-red-800 [&_a]:underline [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-zinc-900 [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:font-semibold [&_h3]:text-zinc-900 [&_img]:my-5 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-xl [&_img]:border [&_img]:border-zinc-200 [&_img]:bg-white [&_img]:p-2 [&_img]:shadow-sm [&_li]:pl-1 [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:space-y-1.5 [&_ol]:pl-6 [&_p]:mb-4 [&_strong]:font-semibold [&_strong]:text-zinc-900 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-6"
                     dangerouslySetInnerHTML={{ __html: current.html }}
                   />
                 ) : (
