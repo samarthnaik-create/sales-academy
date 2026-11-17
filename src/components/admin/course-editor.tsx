@@ -223,59 +223,61 @@ export function CourseEditor({ course }: { course: Course | null }) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Course details */}
         <div className="bg-white rounded-2xl border border-zinc-200 p-6 space-y-4">
-          <h2 className="font-semibold text-zinc-900">Course Details</h2>
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1.5">Day Number</label>
-            <input type="number" min={1} max={30} value={form.dayNumber} onChange={e => setForm(p => ({ ...p, dayNumber: parseInt(e.target.value) }))} required className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent" />
-          </div>
-
-          {/* Videos */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-zinc-700">Videos (optional)</label>
-              <button type="button" onClick={() => setVideos(v => [...v, { title: '', url: '' }])}
-                className="inline-flex items-center gap-1 text-xs text-red-800 hover:text-red-900 font-medium transition-colors">
-                <Plus className="h-3.5 w-3.5" /> Add Video
-              </button>
+          <h2 className="font-semibold text-zinc-900">Day details</h2>
+          <div className="grid gap-4 sm:grid-cols-[8rem_minmax(0,1fr)]">
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1.5">Day number</label>
+              <input type="number" min={1} max={30} value={form.dayNumber} onChange={e => setForm(p => ({ ...p, dayNumber: parseInt(e.target.value) }))} required className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent" />
             </div>
-            {videos.length === 0 ? (
-              <p className="text-xs text-zinc-400 py-2">No videos added — click &ldquo;Add Video&rdquo; to add YouTube, Vimeo or Google Drive links</p>
-            ) : (
-              <div className="space-y-2">
-                {videos.map((v, i) => (
-                  <div key={i} className="flex gap-2 items-start">
-                    <div className="flex-1 grid grid-cols-3 gap-2">
-                      <input
-                        type="text"
-                        value={v.title}
-                        onChange={e => setVideos(prev => prev.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))}
-                        placeholder="Title (optional)"
-                        className="px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30"
-                      />
-                      <input
-                        type="url"
-                        value={v.url}
-                        onChange={e => setVideos(prev => prev.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))}
-                        placeholder="https://youtube.com/... or drive.google.com/..."
-                        className="col-span-2 px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30"
-                      />
-                    </div>
-                    <button type="button" onClick={() => setVideos(prev => prev.filter((_, idx) => idx !== i))}
-                      className="text-zinc-300 hover:text-red-500 transition-colors pt-2 shrink-0">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1.5">Title</label>
-            <input type="text" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} required placeholder="e.g. The Four Sales Roles" className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent" />
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1.5">Title</label>
+              <input type="text" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} required placeholder="e.g. The Four Sales Roles" className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent" />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1.5">Description</label>
             <input type="text" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Short description shown on day card" className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent" />
+          </div>
+          <div className="border-t border-zinc-100 pt-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-zinc-700">Videos (optional)</label>
+                <button type="button" onClick={() => setVideos(v => [...v, { title: '', url: '' }])}
+                  className="inline-flex items-center gap-1 text-xs text-red-800 hover:text-red-900 font-medium transition-colors">
+                  <Plus className="h-3.5 w-3.5" /> Add Video
+                </button>
+              </div>
+              {videos.length === 0 ? (
+                <p className="text-xs text-zinc-400 py-2">No videos added — click &ldquo;Add Video&rdquo; to add YouTube, Vimeo or Google Drive links</p>
+              ) : (
+                <div className="space-y-2">
+                  {videos.map((v, i) => (
+                    <div key={i} className="flex gap-2 items-start">
+                      <div className="flex-1 grid grid-cols-3 gap-2">
+                        <input
+                          type="text"
+                          value={v.title}
+                          onChange={e => setVideos(prev => prev.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))}
+                          placeholder="Title (optional)"
+                          className="px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30"
+                        />
+                        <input
+                          type="url"
+                          value={v.url}
+                          onChange={e => setVideos(prev => prev.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))}
+                          placeholder="https://youtube.com/... or drive.google.com/..."
+                          className="col-span-2 px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30"
+                        />
+                      </div>
+                      <button type="button" onClick={() => setVideos(prev => prev.filter((_, idx) => idx !== i))}
+                        className="text-zinc-300 hover:text-red-500 transition-colors pt-2 shrink-0">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
