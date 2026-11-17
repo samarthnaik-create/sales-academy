@@ -7,7 +7,7 @@ interface Props {
   employee: { id: string; name: string; username: string; email: string }
 }
 
-const inputClass = 'w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent'
+const inputClass = 'w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent'
 
 // Placeholder given to employees added without an email; show it as empty
 const realEmail = (email: string) => (email.endsWith('@noemail.local') ? '' : email)
@@ -47,7 +47,7 @@ export function EditEmployee({ employee }: Props) {
     <>
       <button
         onClick={openModal}
-        className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-600 border border-zinc-200 hover:border-red-200 px-2.5 py-1.5 rounded-lg transition-colors"
+        className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-800 border border-zinc-200 hover:border-red-200 px-2.5 py-1.5 rounded-lg transition-colors"
       >
         <Pencil className="h-3.5 w-3.5" /> Edit
       </button>
@@ -83,7 +83,7 @@ export function EditEmployee({ employee }: Props) {
               {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">{error}</div>}
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setOpen(false)} className="flex-1 border border-zinc-300 text-zinc-700 py-2.5 rounded-lg text-sm hover:bg-zinc-50 transition-colors">Cancel</button>
-                <button type="submit" disabled={loading} className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white py-2.5 rounded-lg text-sm font-medium transition-colors">
+                <button type="submit" disabled={loading} className="flex-1 bg-red-800 hover:bg-red-900 disabled:opacity-60 text-white py-2.5 rounded-lg text-sm font-medium transition-colors">
                   {loading ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>

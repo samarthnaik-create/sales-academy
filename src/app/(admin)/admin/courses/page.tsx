@@ -36,7 +36,7 @@ export default async function CoursesPage() {
           <h1 className="text-2xl font-bold text-zinc-900">Courses</h1>
           <p className="text-zinc-500 text-sm mt-1">{courses.length} {courses.length === 1 ? 'day' : 'days'} total</p>
         </div>
-        <Link href="/admin/courses/new" className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+        <Link href="/admin/courses/new" className="inline-flex items-center gap-2 bg-red-800 hover:bg-red-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
           <Plus className="h-4 w-4" /> Add Course
         </Link>
       </div>
@@ -50,10 +50,10 @@ export default async function CoursesPage() {
       ) : (
         <div className="space-y-3">
           {courses.map(c => (
-            <Link key={c.id} href={`/admin/courses/${c.id}`} className="bg-white rounded-xl border border-zinc-200 p-5 flex items-center justify-between hover:shadow-sm transition-shadow block">
+            <Link key={c.id} href={`/admin/courses/${c.id}`} className="group bg-white rounded-xl border border-zinc-200 p-5 flex items-center justify-between transition-[border-color,box-shadow] hover:border-red-200 hover:shadow-md">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center shrink-0">
-                  <span className="text-white font-bold text-sm">{c.dayNumber}</span>
+                <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center shrink-0 transition-colors group-hover:bg-red-800">
+                  <span className="text-red-800 font-bold text-sm transition-colors group-hover:text-white">{c.dayNumber}</span>
                 </div>
                 <div>
                   <p className="font-semibold text-zinc-900">{c.title}</p>

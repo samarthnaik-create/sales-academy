@@ -7,7 +7,7 @@ import { Course } from '@/models/Course'
 import { Progress } from '@/models/Progress'
 import { QuizAttempt, isSubmitted } from '@/models/QuizAttempt'
 import Link from 'next/link'
-import { MAX_TAB_SWITCHES } from '@/lib/quiz-config'
+import { PASS_THRESHOLD, MAX_TAB_SWITCHES } from '@/lib/quiz-config'
 import { computeQuizWindow, trainingFinishedAt, formatDuration, WINDOW_HOURS } from '@/lib/quiz-window'
 import { Trophy, CheckCircle2, TrendingUp, Users, AlertCircle } from 'lucide-react'
 
@@ -130,17 +130,15 @@ export default async function AnalyticsPage() {
   const overdue = empStats.filter(e => e.quizWindow.overdueMs > 0)
 
   const summaryCards = [
-    { label: 'Total Employees', value: totalEmployees, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Avg Completion', value: `${overallPct}%`, icon: TrendingUp, color: 'text-red-600', bg: 'bg-red-50' },
-    { label: 'Avg Quiz Score', value: allScores.length ? `${overallAvgScore}%` : '—', icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Training Complete', value: finishedCount, icon: Trophy, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: 'Total employees', value: totalEmployees, icon: Users },
+    { label: 'Avg completion', value: `${overallPct}%`, icon: TrendingUp },
+    { label: 'Avg quiz score', value: allScores.length ? `${overallAvgScore}%` : '—', icon: CheckCircle2 },
+    { label: 'Training complete', value: finishedCount, icon: Trophy },
   ]
 
   function scoreColor(score: number | null) {
     if (score === null) return 'text-zinc-300'
-    if (score >= 80) return 'text-green-600'
-    if (score >= 60) return 'text-amber-500'
-    return 'text-red-500'
+    return score >= PASS_THRESHOLD ? 'text-green-600' : 'text-red-700'
   }
 
   function formatDate(d: Date | null) {
@@ -159,11 +157,9 @@ export default async function AnalyticsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {summaryCards.map(c => (
           <div key={c.label} className="bg-white rounded-xl border border-zinc-200 p-5">
-            <div className={`w-9 h-9 ${c.bg} rounded-lg flex items-center justify-center mb-3`}>
-              <c.icon className={`h-4 w-4 ${c.color}`} />
-            </div>
-            <p className="text-3xl font-bold text-zinc-900">{c.value}</p>
-            <p className="text-sm text-zinc-400 mt-0.5">{c.label}</p>
+            <c.icon className="h-5 w-5 text-zinc-400" />
+            <p className="mt-4 text-3xl font-semibold text-zinc-900">{c.value}</p>
+            <p className="mt-0.5 text-sm text-zinc-600">{c.label}</p>
           </div>
         ))}
       </div>
@@ -216,7 +212,7 @@ export default async function AnalyticsPage() {
                           <span className="text-red-700 text-xs font-bold">{emp.name.trim().charAt(0)}</span>
                         </div>
                         <div>
-                          <p className="font-medium text-zinc-900 group-hover:text-red-600 group-hover:underline">{emp.name}</p>
+                          <p className="font-medium text-zinc-900 group-hover:text-red-800 group-hover:underline">{emp.name}</p>
                           <p className="text-xs text-zinc-400">@{emp.username}</p>
                         </div>
                       </Link>
@@ -225,7 +221,7 @@ export default async function AnalyticsPage() {
                       <div className="flex items-center gap-2">
                         <div className="h-1.5 w-24 bg-zinc-100 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full ${pct === 100 ? 'bg-green-500' : 'bg-red-600'}`}
+                            className={`h-full rounded-full ${pct === 100 ? 'bg-emerald-500' : 'bg-red-800'}`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -265,7 +261,7 @@ export default async function AnalyticsPage() {
                         </>
                       ) : (
                         <>
-                          <span className="text-xs text-blue-600 font-medium">In progress</span>
+                          <span className="text-xs text-zinc-600 font-medium">In progress</span>
                           {quizWindow.deadline && (
                             <p className="text-xs text-zinc-400 mt-1 whitespace-nowrap">due in {formatDuration(quizWindow.remainingMs)}</p>
                           )}
@@ -324,7 +320,7 @@ export default async function AnalyticsPage() {
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-16 bg-zinc-100 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full ${passRate >= 80 ? 'bg-green-500' : passRate >= 50 ? 'bg-amber-400' : 'bg-red-500'}`}
+                              className={`h-full rounded-full ${passRate >= 80 ? 'bg-emerald-500' : 'bg-red-800'}`}
                               style={{ width: `${passRate}%` }}
                             />
                           </div>

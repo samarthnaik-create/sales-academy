@@ -39,7 +39,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Image src="/icon.png" alt="Mohidin Properties" width={72} height={72} preload className="mx-auto mb-4" />
-          <h1 className="font-brand text-3xl font-extrabold tracking-tight text-red-600">Sales Academy</h1>
+          <h1 className="font-brand text-3xl font-extrabold tracking-tight text-red-800">Sales Academy</h1>
           <p className="text-zinc-500 text-sm mt-1">Sign in to continue your training</p>
         </div>
 
@@ -53,7 +53,7 @@ export default function LoginPage() {
                 onChange={e => setIdentifier(e.target.value)}
                 placeholder="you@example.com or john.smith"
                 required
-                className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent"
               />
             </div>
             <div>
@@ -65,7 +65,7 @@ export default function LoginPage() {
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full px-3 py-2.5 pr-10 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 pr-10 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent"
                 />
                 <button
                   type="button"
@@ -87,7 +87,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
+              className="w-full bg-red-800 hover:bg-red-900 disabled:opacity-60 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
             >
               {loading ? 'Signing in…' : 'Sign In'}
             </button>
@@ -101,7 +101,7 @@ export default function LoginPage() {
       </main>
 
       <footer className="py-6 text-center text-xs text-zinc-400">
-        <span className="font-brand font-bold text-red-600">Sales Academy</span> by <span className="font-brand font-bold text-[#1a75bb]">Mohidin Properties</span>
+        <span className="font-brand font-bold text-red-800">Sales Academy</span> by <span className="font-brand font-bold text-[#1a75bb]">Mohidin Properties</span>
         <span className="mx-1.5">·</span>© {new Date().getFullYear()}
       </footer>
     </div>

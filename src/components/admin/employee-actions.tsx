@@ -60,12 +60,12 @@ export function EmployeeActions({ mode, employeeId, employeeName }: Props) {
   return (
     <>
       {mode === 'add' ? (
-        <button onClick={openModal} className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+        <button onClick={openModal} className="inline-flex items-center gap-2 bg-red-800 hover:bg-red-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
           <UserPlus className="h-4 w-4" /> Add Employee
         </button>
       ) : (
         <div className="flex items-center gap-2">
-          <button onClick={openModal} className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-600 border border-zinc-200 hover:border-red-200 px-2.5 py-1.5 rounded-lg transition-colors">
+          <button onClick={openModal} className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-800 border border-zinc-200 hover:border-red-200 px-2.5 py-1.5 rounded-lg transition-colors">
             <KeyRound className="h-3.5 w-3.5" /> Reset Password
           </button>
           <button
@@ -74,7 +74,7 @@ export function EmployeeActions({ mode, employeeId, employeeName }: Props) {
               await fetch(`/api/admin/employees/${employeeId}`, { method: 'DELETE' })
               window.location.reload()
             }}
-            className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-red-600 border border-zinc-200 hover:border-red-200 px-2.5 py-1.5 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-red-800 border border-zinc-200 hover:border-red-200 px-2.5 py-1.5 rounded-lg transition-colors"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -110,7 +110,7 @@ export function EmployeeActions({ mode, employeeId, employeeName }: Props) {
                       onChange={e => setField(f.key, f.key === 'username' ? e.target.value.toLowerCase() : e.target.value)}
                       placeholder={f.placeholder}
                       required={f.key !== 'email'}
-                      className={`w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent${f.key === "password" ? " pr-10" : ""}`}
+                      className={`w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent${f.key === "password" ? " pr-10" : ""}`}
                     />
                     {f.key === 'password' && <PasswordToggle shown={showPassword} onToggle={() => setShowPassword(v => !v)} />}
                     </div>
@@ -124,7 +124,7 @@ export function EmployeeActions({ mode, employeeId, employeeName }: Props) {
                         key={r}
                         type="button"
                         onClick={() => setField('role', r)}
-                        className={`flex-1 py-2.5 rounded-lg text-sm font-medium border-2 transition-colors capitalize ${form.role === r ? 'border-red-500 bg-red-50 text-red-700' : 'border-zinc-200 text-zinc-500 hover:border-zinc-300'}`}
+                        className={`flex-1 py-2.5 rounded-lg text-sm font-medium border-2 transition-colors capitalize ${form.role === r ? 'border-red-800 bg-red-50 text-red-700' : 'border-zinc-200 text-zinc-500 hover:border-zinc-300'}`}
                       >
                         {r}
                       </button>
@@ -134,7 +134,7 @@ export function EmployeeActions({ mode, employeeId, employeeName }: Props) {
                 {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2 rounded-lg">{error}</div>}
                 <div className="flex gap-3 pt-1">
                   <button type="button" onClick={closeModal} className="flex-1 border border-zinc-300 text-zinc-700 py-2.5 rounded-lg text-sm hover:bg-zinc-50 transition-colors">Cancel</button>
-                  <button type="submit" disabled={loading} className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white py-2.5 rounded-lg text-sm font-medium transition-colors">
+                  <button type="submit" disabled={loading} className="flex-1 bg-red-800 hover:bg-red-900 disabled:opacity-60 text-white py-2.5 rounded-lg text-sm font-medium transition-colors">
                     {loading ? 'Adding…' : 'Add Employee'}
                   </button>
                 </div>
@@ -151,7 +151,7 @@ export function EmployeeActions({ mode, employeeId, employeeName }: Props) {
                     placeholder="Min 6 characters"
                     required
                     minLength={6}
-                    className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent pr-10"
+                    className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent pr-10"
                   />
                   <PasswordToggle shown={showPassword} onToggle={() => setShowPassword(v => !v)} />
                   </div>
@@ -160,7 +160,7 @@ export function EmployeeActions({ mode, employeeId, employeeName }: Props) {
                 {success && <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-3 py-2 rounded-lg">{success}</div>}
                 <div className="flex gap-3 pt-1">
                   <button type="button" onClick={closeModal} className="flex-1 border border-zinc-300 text-zinc-700 py-2.5 rounded-lg text-sm hover:bg-zinc-50 transition-colors">Close</button>
-                  <button type="submit" disabled={loading} className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white py-2.5 rounded-lg text-sm font-medium transition-colors">
+                  <button type="submit" disabled={loading} className="flex-1 bg-red-800 hover:bg-red-900 disabled:opacity-60 text-white py-2.5 rounded-lg text-sm font-medium transition-colors">
                     {loading ? 'Saving…' : 'Set Password'}
                   </button>
                 </div>

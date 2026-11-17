@@ -206,13 +206,13 @@ export function CourseEditor({ course }: { course: Course | null }) {
   const usesAi = aiTopup || quizzes.length === 0
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <Link href="/admin/courses" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors">
           <ArrowLeft className="h-4 w-4" /> Back to Courses
         </Link>
         {!isNew && (
-          <button onClick={deleteCourse} className="text-sm text-red-500 hover:text-red-700 flex items-center gap-1.5 transition-colors">
+          <button onClick={deleteCourse} className="text-sm text-red-500 hover:text-red-900 flex items-center gap-1.5 transition-colors">
             <Trash2 className="h-4 w-4" /> Delete Course
           </button>
         )}
@@ -226,7 +226,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
           <h2 className="font-semibold text-zinc-900">Course Details</h2>
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1.5">Day Number</label>
-            <input type="number" min={1} max={30} value={form.dayNumber} onChange={e => setForm(p => ({ ...p, dayNumber: parseInt(e.target.value) }))} required className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" />
+            <input type="number" min={1} max={30} value={form.dayNumber} onChange={e => setForm(p => ({ ...p, dayNumber: parseInt(e.target.value) }))} required className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent" />
           </div>
 
           {/* Videos */}
@@ -234,7 +234,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-zinc-700">Videos (optional)</label>
               <button type="button" onClick={() => setVideos(v => [...v, { title: '', url: '' }])}
-                className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 font-medium transition-colors">
+                className="inline-flex items-center gap-1 text-xs text-red-800 hover:text-red-900 font-medium transition-colors">
                 <Plus className="h-3.5 w-3.5" /> Add Video
               </button>
             </div>
@@ -250,14 +250,14 @@ export function CourseEditor({ course }: { course: Course | null }) {
                         value={v.title}
                         onChange={e => setVideos(prev => prev.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))}
                         placeholder="Title (optional)"
-                        className="px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                        className="px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30"
                       />
                       <input
                         type="url"
                         value={v.url}
                         onChange={e => setVideos(prev => prev.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))}
                         placeholder="https://youtube.com/... or drive.google.com/..."
-                        className="col-span-2 px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                        className="col-span-2 px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30"
                       />
                     </div>
                     <button type="button" onClick={() => setVideos(prev => prev.filter((_, idx) => idx !== i))}
@@ -271,11 +271,11 @@ export function CourseEditor({ course }: { course: Course | null }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1.5">Title</label>
-            <input type="text" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} required placeholder="e.g. The Four Sales Roles" className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" />
+            <input type="text" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} required placeholder="e.g. The Four Sales Roles" className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent" />
           </div>
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1.5">Description</label>
-            <input type="text" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Short description shown on day card" className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" />
+            <input type="text" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Short description shown on day card" className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent" />
           </div>
         </div>
 
@@ -304,7 +304,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-700 border border-red-200 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-red-800 hover:text-red-900 border border-red-200 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
               >
                 {uploading
                   ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Processing…</>
@@ -348,7 +348,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
                     key={i}
                     type="button"
                     onClick={() => { setActiveTopic(i); setActiveModule(0) }}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${activeTopic === i ? 'bg-red-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${activeTopic === i ? 'bg-red-800 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
                   >
                     <FolderOpen className="h-3 w-3" />
                     {t.title || `Topic ${i + 1}`}
@@ -364,13 +364,13 @@ export function CourseEditor({ course }: { course: Course | null }) {
                 <div className="space-y-3">
                   {/* Topic title row */}
                   <div className="flex items-center gap-2">
-                    <FolderOpen className="h-4 w-4 text-red-500 shrink-0" />
+                    <FolderOpen className="h-4 w-4 text-red-800 shrink-0" />
                     <input
                       type="text"
                       value={currentTopic.title}
                       onChange={e => updateTopicTitle(activeTopic, e.target.value)}
                       placeholder="Topic title"
-                      className="flex-1 font-semibold text-sm text-zinc-900 border-b border-zinc-200 focus:border-red-400 outline-none pb-0.5"
+                      className="flex-1 font-semibold text-sm text-zinc-900 border-b border-zinc-200 focus:border-red-800 outline-none pb-0.5"
                     />
                     <button
                       type="button"
@@ -408,7 +408,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
                     <button
                       type="button"
                       onClick={addModule}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-red-600 hover:text-red-700 border border-dashed border-red-200 hover:border-red-300 transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-red-800 hover:text-red-900 border border-dashed border-red-200 hover:border-red-300 transition-colors"
                     >
                       <Plus className="h-3 w-3" /> Add Module
                     </button>
@@ -431,7 +431,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
                           value={currentModule.title}
                           onChange={e => updateModule(activeModule, 'title', e.target.value)}
                           placeholder="Module title"
-                          className="flex-1 font-medium text-sm text-zinc-900 border-b border-zinc-200 focus:border-red-400 outline-none pb-0.5"
+                          className="flex-1 font-medium text-sm text-zinc-900 border-b border-zinc-200 focus:border-red-800 outline-none pb-0.5"
                         />
                         <button
                           type="button"
@@ -454,7 +454,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
                           <button
                             type="button"
                             onClick={() => updateModuleVideos(activeModule, [...(currentModule.videos ?? []), { title: '', url: '' }])}
-                            className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 font-medium transition-colors"
+                            className="inline-flex items-center gap-1 text-xs text-red-800 hover:text-red-900 font-medium transition-colors"
                           >
                             <Plus className="h-3 w-3" /> Add Video
                           </button>
@@ -474,7 +474,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
                                       updateModuleVideos(activeModule, updated)
                                     }}
                                     placeholder="Title (optional)"
-                                    className="px-2.5 py-1.5 border border-zinc-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    className="px-2.5 py-1.5 border border-zinc-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-800/30"
                                   />
                                   <input
                                     type="url"
@@ -484,7 +484,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
                                       updateModuleVideos(activeModule, updated)
                                     }}
                                     placeholder="https://youtube.com/... or drive.google.com/..."
-                                    className="col-span-2 px-2.5 py-1.5 border border-zinc-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    className="col-span-2 px-2.5 py-1.5 border border-zinc-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-800/30"
                                   />
                                 </div>
                                 <button
@@ -527,7 +527,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
                 {quizzes.length === 0 ? `Leave empty — AI generates all ${effectiveCount} questions` : `${quizzes.length} manual question${quizzes.length > 1 ? 's' : ''} added`}
               </p>
             </div>
-            <button type="button" onClick={addQuestion} className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 font-medium transition-colors">
+            <button type="button" onClick={addQuestion} className="inline-flex items-center gap-1.5 text-sm text-red-800 hover:text-red-900 font-medium transition-colors">
               <Plus className="h-4 w-4" /> Add Question
             </button>
           </div>
@@ -549,7 +549,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
               value={Number.isNaN(questionCount) ? '' : questionCount}
               onChange={e => setQuestionCount(e.target.value === '' ? NaN : parseInt(e.target.value))}
               onBlur={() => setQuestionCount(clampQuestionCount(questionCount))}
-              className="w-20 shrink-0 px-3 py-2 border border-zinc-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="w-20 shrink-0 px-3 py-2 border border-zinc-300 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent"
             />
           </div>
 
@@ -559,7 +559,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
               type="checkbox"
               checked={aiTopup}
               onChange={e => setAiTopup(e.target.checked)}
-              className="mt-0.5 accent-red-600 w-4 h-4 shrink-0"
+              className="mt-0.5 accent-red-800 w-4 h-4 shrink-0"
             />
             <div>
               <p className="text-sm font-medium text-zinc-900">Fill remaining questions with AI</p>
@@ -586,15 +586,15 @@ export function CourseEditor({ course }: { course: Course | null }) {
                   <span className="text-xs font-semibold text-zinc-400 uppercase">Question {qi + 1}</span>
                   <button type="button" onClick={() => removeQuestion(qi)} className="text-zinc-400 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
                 </div>
-                <input type="text" value={q.question} onChange={e => updateQuestion(qi, 'question', e.target.value)} placeholder="Question text?" required className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" />
+                <input type="text" value={q.question} onChange={e => updateQuestion(qi, 'question', e.target.value)} placeholder="Question text?" required className="w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent" />
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   {q.options.map((opt, oi) => (
-                    <input key={oi} type="text" value={opt} onChange={e => updateOption(qi, oi, e.target.value)} placeholder={`Option ${String.fromCharCode(65 + oi)}`} required className="px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" />
+                    <input key={oi} type="text" value={opt} onChange={e => updateOption(qi, oi, e.target.value)} placeholder={`Option ${String.fromCharCode(65 + oi)}`} required className="px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent" />
                   ))}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-zinc-500 mb-1">Correct Answer</label>
-                  <select value={q.answer} onChange={e => updateQuestion(qi, 'answer', e.target.value)} required className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                  <select value={q.answer} onChange={e => updateQuestion(qi, 'answer', e.target.value)} required className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent">
                     <option value="">Select correct answer</option>
                     {q.options.filter(Boolean).map((opt, oi) => <option key={oi} value={opt}>{opt}</option>)}
                   </select>
@@ -608,7 +608,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
 
         <div className="flex gap-3">
           <Link href="/admin/courses" className="flex-1 text-center border border-zinc-300 text-zinc-700 py-2.5 rounded-lg text-sm hover:bg-zinc-50 transition-colors">Cancel</Link>
-          <button type="submit" disabled={loading} className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white py-2.5 rounded-lg text-sm font-medium transition-colors">
+          <button type="submit" disabled={loading} className="flex-1 bg-red-800 hover:bg-red-900 disabled:opacity-60 text-white py-2.5 rounded-lg text-sm font-medium transition-colors">
             {loading ? 'Saving…' : isNew ? 'Create Course' : 'Save Changes'}
           </button>
         </div>

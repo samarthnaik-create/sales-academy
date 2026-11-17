@@ -86,7 +86,7 @@ export default async function EmployeesPage() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-24 bg-zinc-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-red-600 rounded-full" style={{ width: `${pct}%` }} />
+                            <div className={`h-full rounded-full ${pct === 100 ? 'bg-emerald-500' : 'bg-red-800'}`} style={{ width: `${pct}%` }} />
                           </div>
                           <span className="text-xs text-zinc-500">{completed}/{totalCourses}</span>
                         </div>

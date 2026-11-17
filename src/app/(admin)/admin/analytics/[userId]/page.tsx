@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import mongoose from 'mongoose'
 import Link from 'next/link'
+import { PASS_THRESHOLD } from '@/lib/quiz-config'
 import { notFound } from 'next/navigation'
 import { requireAdmin } from '@/lib/auth'
 import { connectDB } from '@/lib/mongoose'
@@ -25,9 +26,7 @@ const fmtDateTime = (d: Date) =>
 
 function scoreColor(score: number | null) {
   if (score === null) return 'text-zinc-300'
-  if (score >= 90) return 'text-green-600'
-  if (score >= 60) return 'text-amber-500'
-  return 'text-red-500'
+  return score >= PASS_THRESHOLD ? 'text-green-600' : 'text-red-700'
 }
 
 export default async function EmployeeAnalyticsPage({ params }: Props) {
@@ -116,7 +115,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
           <p className="text-sm text-zinc-400">@{emp.username} · {emp.email} · joined {fmtDate(emp.createdAt)}</p>
           <div className="flex items-center gap-2 mt-2">
             <div className="h-1.5 w-40 bg-zinc-100 rounded-full overflow-hidden">
-              <div className={`h-full rounded-full ${pct === 100 ? 'bg-green-500' : 'bg-red-600'}`} style={{ width: `${pct}%` }} />
+              <div className={`h-full rounded-full ${pct === 100 ? 'bg-emerald-500' : 'bg-red-800'}`} style={{ width: `${pct}%` }} />
             </div>
             <span className="text-xs text-zinc-500">{pct}% complete</span>
           </div>
@@ -134,7 +133,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
       ) : quizWindow.deadline && nextDay ? (
         quizWindow.overdueMs > 0 ? (
           <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-6">
-            <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+            <AlertCircle className="h-4 w-4 text-red-800 shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-red-800">Overdue: Day {nextDay} quiz is {formatDuration(quizWindow.overdueMs)} late</p>
               <p className="text-xs text-red-700 mt-0.5">It was due by {fmtDateTime(quizWindow.deadline)} ({WINDOW_HOURS}h after the last attempt).</p>
@@ -204,7 +203,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
                     ) : d.attempts > 0 ? (
                       <span className="text-xs font-medium text-amber-600 whitespace-nowrap">Not passed yet</span>
                     ) : d.unlocked ? (
-                      <span className="text-xs font-medium text-blue-600 whitespace-nowrap">Not attempted</span>
+                      <span className="text-xs font-medium text-zinc-400 whitespace-nowrap">Not attempted</span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-xs text-zinc-300 whitespace-nowrap"><Lock className="h-3 w-3" /> Locked</span>
                     )}

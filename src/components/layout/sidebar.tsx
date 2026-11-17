@@ -38,8 +38,8 @@ export function Sidebar({ userName, role }: SidebarProps) {
             <p className="font-brand text-sm font-extrabold tracking-tight text-zinc-900 leading-tight">Sales Academy</p>
             {role === 'admin' && (
               <div className="flex items-center gap-1 mt-0.5">
-                <ShieldCheck className="h-3 w-3 text-red-600" />
-                <span className="text-xs text-red-600 font-medium">Admin</span>
+                <ShieldCheck className="h-3 w-3 text-red-800" />
+                <span className="text-xs text-red-800 font-medium">Admin</span>
               </div>
             )}
           </div>
@@ -61,7 +61,7 @@ export function Sidebar({ userName, role }: SidebarProps) {
                   : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'
               )}
             >
-              <Icon className={cn('h-4 w-4', active ? 'text-red-600' : 'text-zinc-400')} />
+              <Icon className={cn('h-4 w-4', active ? 'text-red-800' : 'text-zinc-400')} />
               {label}
             </Link>
           )
@@ -78,7 +78,7 @@ export function Sidebar({ userName, role }: SidebarProps) {
         </div>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-zinc-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-zinc-500 hover:text-red-800 hover:bg-red-50 transition-colors"
         >
           <LogOut className="h-4 w-4" />
           Sign Out

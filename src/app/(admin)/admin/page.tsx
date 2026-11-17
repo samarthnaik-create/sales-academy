@@ -87,7 +87,7 @@ export default async function AdminPage() {
           <Link href="/admin/employees" className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50">
             <UserPlus className="h-4 w-4" /> Add employee
           </Link>
-          <Link href="/admin/announcements" className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700">
+          <Link href="/admin/announcements" className="inline-flex items-center gap-1.5 rounded-lg bg-red-800 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-900">
             <Megaphone className="h-4 w-4" /> New announcement
           </Link>
         </div>
@@ -102,7 +102,7 @@ export default async function AdminPage() {
             className="group rounded-xl border border-zinc-200 bg-white p-5 transition-all duration-200 hover:border-red-200 hover:shadow-md"
           >
             <div className="flex items-center justify-between text-zinc-400">
-              <s.icon className="h-5 w-5 transition-colors group-hover:text-red-600" />
+              <s.icon className="h-5 w-5 transition-colors group-hover:text-red-800" />
               <ArrowUpRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
             <p className="mt-4 text-3xl font-semibold text-zinc-900">{s.value}</p>
@@ -116,7 +116,7 @@ export default async function AdminPage() {
       <section className="rounded-xl border border-zinc-200 bg-white">
           <div className="flex items-center justify-between px-5 py-4">
             <h2 className="font-semibold text-zinc-900">Recent quiz attempts</h2>
-            <Link href="/admin/analytics" className="inline-flex items-center text-xs font-medium text-zinc-500 hover:text-red-600">
+            <Link href="/admin/analytics" className="inline-flex items-center text-xs font-medium text-zinc-500 hover:text-red-800">
               View all <ChevronRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -135,7 +135,7 @@ export default async function AdminPage() {
                     <span className="w-20 text-right text-sm font-semibold">
                       {!a.submitted
                         ? <span className="text-xs font-medium text-zinc-400">In progress</span>
-                        : <span className={a.passed ? 'text-green-600' : 'text-red-600'}>{a.score}%</span>}
+                        : <span className={a.passed ? 'text-green-600' : 'text-red-800'}>{a.score}%</span>}
                     </span>
                   </Link>
                 </li>

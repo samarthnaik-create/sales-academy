@@ -17,7 +17,7 @@ interface Employee { id: string; name: string; hasEmail: boolean }
 
 interface EmailResult { sent: number; failed: string[]; noEmail: number }
 
-const inputClass = 'w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent'
+const inputClass = 'w-full px-3 py-2.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-800/30 focus:border-transparent'
 
 export function AnnouncementManager({ announcements: initial, employees }: { announcements: Announcement[]; employees: Employee[] }) {
   const router = useRouter()
@@ -120,7 +120,7 @@ export function AnnouncementManager({ announcements: initial, employees }: { ann
                 key={o.label}
                 type="button"
                 onClick={() => setOnlySelected(o.value)}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium border-2 transition-colors ${onlySelected === o.value ? 'border-red-500 bg-red-50 text-red-700' : 'border-zinc-200 text-zinc-500 hover:border-zinc-300'}`}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium border-2 transition-colors ${onlySelected === o.value ? 'border-red-800 bg-red-50 text-red-700' : 'border-zinc-200 text-zinc-500 hover:border-zinc-300'}`}
               >
                 {o.label}
               </button>
@@ -137,7 +137,7 @@ export function AnnouncementManager({ announcements: initial, employees }: { ann
                   placeholder="Search employees"
                   className="flex-1 text-sm focus:outline-none bg-transparent"
                 />
-                <button type="button" onClick={() => setSelected(new Set(visible.map(e => e.id)))} className="text-xs text-red-600 hover:underline shrink-0">Select all</button>
+                <button type="button" onClick={() => setSelected(new Set(visible.map(e => e.id)))} className="text-xs text-red-800 hover:underline shrink-0">Select all</button>
                 <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-zinc-500 hover:underline shrink-0">Clear</button>
               </div>
               <div className="max-h-56 overflow-y-auto divide-y divide-zinc-50">
@@ -145,7 +145,7 @@ export function AnnouncementManager({ announcements: initial, employees }: { ann
                   <p className="px-3 py-4 text-sm text-zinc-400 text-center">No employees match</p>
                 ) : visible.map(e => (
                   <label key={e.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-zinc-50">
-                    <input type="checkbox" checked={selected.has(e.id)} onChange={() => toggle(e.id)} className="h-4 w-4 accent-red-600" />
+                    <input type="checkbox" checked={selected.has(e.id)} onChange={() => toggle(e.id)} className="h-4 w-4 accent-red-800" />
                     <span className="text-sm text-zinc-800 flex-1">{e.name}</span>
                     {!e.hasEmail && <span className="text-xs text-zinc-400">no email</span>}
                   </label>
@@ -164,7 +164,7 @@ export function AnnouncementManager({ announcements: initial, employees }: { ann
             checked={notify && canEmail}
             disabled={!canEmail}
             onChange={e => setNotify(e.target.checked)}
-            className="mt-0.5 h-4 w-4 accent-red-600"
+            className="mt-0.5 h-4 w-4 accent-red-800"
           />
           <span className="text-sm">
             <span className="font-medium text-zinc-800">Also send by email</span>
@@ -179,7 +179,7 @@ export function AnnouncementManager({ announcements: initial, employees }: { ann
           </span>
         </label>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-800">{error}</p>}
         {emailResult && (
           <div className={`text-sm px-3 py-2 rounded-lg border ${emailResult.failed.length ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-green-50 border-green-200 text-green-800'}`}>
             Posted and emailed to {emailResult.sent} employee{emailResult.sent === 1 ? '' : 's'}.
@@ -190,7 +190,7 @@ export function AnnouncementManager({ announcements: initial, employees }: { ann
         <button
           onClick={add}
           disabled={loading}
-          className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 bg-red-800 hover:bg-red-900 disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
         >
           <Plus className="h-4 w-4" /> {loading ? (notify && canEmail ? 'Posting & emailing…' : 'Posting…') : 'Post Announcement'}
         </button>
