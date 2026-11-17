@@ -6,7 +6,6 @@ import { User } from '@/models/User'
 import { Course } from '@/models/Course'
 import { QuizAttempt, isSubmitted } from '@/models/QuizAttempt'
 import { Progress } from '@/models/Progress'
-import { computeQuizWindow, trainingFinishedAt, nextIncompleteDay, formatDuration } from '@/lib/quiz-window'
 import Link from 'next/link'
 import { Users, BookOpen, CheckCircle2, Trophy, ArrowUpRight, UserPlus, Megaphone, ChevronRight } from 'lucide-react'
 
@@ -35,7 +34,7 @@ export default async function AdminPage() {
   ])
   const employeeIds = employeeDocs.map(e => e._id)
   const [allProgress, allAttempts] = await Promise.all([
-    Progress.find({ userId: { $in: employeeIds } }, { userId: 1, courseId: 1, completed: 1, completedAt: 1 }).lean(),
+    Progress.find({ userId: { $in: employeeIds } }, { userId: 1, courseId: 1, completed: 1 }).lean(),
     QuizAttempt.find({ userId: { $in: employeeIds } }, { userId: 1, courseId: 1, score: 1, passed: 1, status: 1, createdAt: 1 }).sort({ createdAt: -1 }).lean(),
   ])
 
@@ -47,30 +46,14 @@ export default async function AdminPage() {
 
   const people = employeeDocs.map(emp => {
     const id = String(emp._id)
-    const progress = allProgress.filter(p => String(p.userId) === id)
-    const attempts = allAttempts.filter(a => String(a.userId) === id)
-    const completed = progress.filter(p => p.completed && courseMap[String(p.courseId)]).length
-    const quizWindow = computeQuizWindow(attempts.map(a => a.createdAt), trainingFinishedAt(progress, totalCourses), now)
-    return {
-      id, name: emp.name,
-      started: attempts.length > 0,
-      done: totalCourses > 0 && completed >= totalCourses,
-      overdueMs: quizWindow.overdueMs,
-      nextDay: nextIncompleteDay(courses, progress),
-    }
+    const completed = allProgress.filter(p => String(p.userId) === id && p.completed && courseMap[String(p.courseId)]).length
+    return { id, done: totalCourses > 0 && completed >= totalCourses }
   })
 
   const submitted = allAttempts.filter(isSubmitted)
   const passedCount = submitted.filter(a => a.passed).length
   const passRate = submitted.length ? Math.round((passedCount / submitted.length) * 100) : 0
   const activeThisWeek = new Set(allAttempts.filter(a => nowMs - new Date(a.createdAt).getTime() < 7 * 86400000).map(a => String(a.userId))).size
-
-  const attention = [
-    ...people.filter(p => p.overdueMs > 0).sort((a, b) => b.overdueMs - a.overdueMs)
-      .map(p => ({ id: p.id, name: p.name, detail: `Day ${p.nextDay ?? '?'} quiz`, tag: `${formatDuration(p.overdueMs)} late`, urgent: true })),
-    ...people.filter(p => !p.started)
-      .map(p => ({ id: p.id, name: p.name, detail: 'No quiz attempted yet', tag: 'Not started', urgent: false })),
-  ]
 
   const stats = [
     { label: 'Employees', value: people.length, sub: `${activeThisWeek} active this week`, icon: Users, href: '/admin/employees' },
@@ -129,9 +112,8 @@ export default async function AdminPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Recent attempts */}
-        <section className="rounded-xl border border-zinc-200 bg-white lg:col-span-2">
+      {/* Recent attempts */}
+      <section className="rounded-xl border border-zinc-200 bg-white">
           <div className="flex items-center justify-between px-5 py-4">
             <h2 className="font-semibold text-zinc-900">Recent quiz attempts</h2>
             <Link href="/admin/analytics" className="inline-flex items-center text-xs font-medium text-zinc-500 hover:text-red-600">
@@ -161,31 +143,6 @@ export default async function AdminPage() {
             </ul>
           )}
         </section>
-
-        {/* Needs attention */}
-        <section className="self-start rounded-xl border border-zinc-200 bg-white">
-          <div className="px-5 py-4">
-            <h2 className="font-semibold text-zinc-900">Needs attention</h2>
-          </div>
-          {attention.length === 0 ? (
-            <p className="border-t border-zinc-100 px-5 py-8 text-center text-sm text-zinc-400">Everyone is on track</p>
-          ) : (
-            <ul className="border-t border-zinc-100">
-              {attention.slice(0, 6).map(p => (
-                <li key={p.id}>
-                  <Link href={`/admin/analytics/${p.id}`} className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-zinc-50">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-zinc-900">{p.name}</p>
-                      <p className="text-xs text-zinc-400">{p.detail}</p>
-                    </div>
-                    <span className={`shrink-0 text-xs font-medium ${p.urgent ? 'text-red-600' : 'text-zinc-400'}`}>{p.tag}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
     </div>
   )
 }
