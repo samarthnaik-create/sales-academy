@@ -5,6 +5,7 @@ const WINDOW_MS = WINDOW_HOURS * 60 * 60 * 1000
 export interface QuizWindow {
   deadline: Date | null // when the current window closes; null before the first attempt or once training is finished
   overdueMs: number     // how far past the current deadline (0 when on time)
+  remainingMs: number   // time left until the deadline (0 when overdue or no deadline)
   missed: number        // windows missed so far, including the current one if overdue
 }
 
@@ -13,18 +14,18 @@ export interface QuizWindow {
 export function computeQuizWindow(attemptTimes: Date[], finishedAt: Date | null, now = new Date()): QuizWindow {
   let times = attemptTimes.map(t => new Date(t).getTime()).sort((a, b) => a - b)
   if (finishedAt) times = times.filter(t => t <= finishedAt.getTime())
-  if (times.length === 0) return { deadline: null, overdueMs: 0, missed: 0 }
+  if (times.length === 0) return { deadline: null, overdueMs: 0, remainingMs: 0, missed: 0 }
 
   let missed = 0
   for (let i = 1; i < times.length; i++) {
     if (times[i] - times[i - 1] > WINDOW_MS) missed++
   }
-  if (finishedAt) return { deadline: null, overdueMs: 0, missed }
+  if (finishedAt) return { deadline: null, overdueMs: 0, remainingMs: 0, missed }
 
   const deadline = times[times.length - 1] + WINDOW_MS
   const overdueMs = Math.max(0, now.getTime() - deadline)
   if (overdueMs > 0) missed++
-  return { deadline: new Date(deadline), overdueMs, missed }
+  return { deadline: new Date(deadline), overdueMs, remainingMs: Math.max(0, deadline - now.getTime()), missed }
 }
 
 // How late each attempt was against the window opened by the attempt before it (0 = on time).

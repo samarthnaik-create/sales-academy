@@ -5,6 +5,7 @@ import { clampQuestionCount } from '@/lib/quiz-config'
 import { Quiz } from '@/models/Quiz'
 import { Progress } from '@/models/Progress'
 import { checkCourseAccess } from '@/lib/unlock'
+import { shuffle } from '@/lib/shuffle'
 import { isId } from '@/lib/validate'
 import { notFound, redirect } from 'next/navigation'
 import { QuizEngine } from '@/components/employee/quiz-engine'
@@ -54,11 +55,7 @@ export default async function QuizPage({ params }: Props) {
     return <AiQuizStarter course={course} totalQuestions={totalQuestions} progress={safeProgress} userId={user.id} hasNextDay={hasNextDay} />
   }
 
-  const shuffled = [...questions]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-  }
+  const shuffled = shuffle(questions)
 
   return (
     <QuizEngine

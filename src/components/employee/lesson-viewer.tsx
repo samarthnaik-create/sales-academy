@@ -215,7 +215,7 @@ export function LessonViewer({ course, quiz, start }: Props) {
           )}
 
           {current ? (
-            <section ref={lessonTop} className="scroll-mt-6 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+            <section ref={lessonTop} key={currentKey} className="animate-fade scroll-mt-6 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
               <div className="border-b border-zinc-100 px-6 pb-4 pt-5 sm:px-8">
                 <p className="text-xs font-medium text-zinc-400">
                   {named && topics[pos.ti].title ? `${topics[pos.ti].title} · ` : ''}Lesson {flatIdx + 1} of {total}
@@ -307,7 +307,7 @@ export function LessonViewer({ course, quiz, start }: Props) {
                   </button>
                 ) : <span />}
                 {nextItem ? (
-                  <button onClick={() => go(nextItem.ti, nextItem.mi)} className="flex min-w-0 items-center gap-3 rounded-xl bg-red-800 px-4 py-2.5 text-left text-white transition-colors hover:bg-red-900">
+                  <button onClick={() => go(nextItem.ti, nextItem.mi)} className="flex min-w-0 items-center gap-3 rounded-xl bg-red-800 px-4 py-2.5 text-left text-white transition-[background-color,transform] hover:bg-red-900 active:scale-[0.98]">
                     <span className="min-w-0">
                       <span className="block text-xs text-red-100/80">Next lesson</span>
                       <span className="block max-w-[14rem] truncate text-sm font-medium">{nextItem.title}</span>
@@ -455,7 +455,7 @@ export function LessonViewer({ course, quiz, start }: Props) {
             ) : null}
 
             {quizOpen ? (
-              <Link href={`/quiz/${course.id}`} className="mt-4 block rounded-xl bg-red-800 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-red-900">
+              <Link href={`/quiz/${course.id}`} className="mt-4 block rounded-xl bg-red-800 py-2.5 text-center text-sm font-medium text-white transition-[background-color,transform] hover:bg-red-900 active:scale-[0.98]">
                 {quiz.completed ? 'Retake quiz' : quiz.attempts > 0 ? 'Try again' : 'Start quiz'}
               </Link>
             ) : (

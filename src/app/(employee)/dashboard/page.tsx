@@ -133,7 +133,7 @@ export default async function DashboardPage() {
           <Link href={`/day/${nextDay}`} className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 transition-colors hover:bg-zinc-50">
             <Clock className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" />
             <div>
-              <p className="text-sm font-semibold text-zinc-900">Attempt your Day {nextDay} quiz within {formatDuration(quizWindow.deadline.getTime() - Date.now())}</p>
+              <p className="text-sm font-semibold text-zinc-900">Attempt your Day {nextDay} quiz within {formatDuration(quizWindow.remainingMs)}</p>
               <p className="mt-0.5 text-xs text-zinc-500">You have {WINDOW_HOURS} hours after each quiz attempt to attempt the next one. Passing or not, any attempt resets the clock.</p>
             </div>
           </Link>

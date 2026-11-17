@@ -267,7 +267,7 @@ export default async function AnalyticsPage() {
                         <>
                           <span className="text-xs text-blue-600 font-medium">In progress</span>
                           {quizWindow.deadline && (
-                            <p className="text-xs text-zinc-400 mt-1 whitespace-nowrap">due in {formatDuration(quizWindow.deadline.getTime() - Date.now())}</p>
+                            <p className="text-xs text-zinc-400 mt-1 whitespace-nowrap">due in {formatDuration(quizWindow.remainingMs)}</p>
                           )}
                         </>
                       )}

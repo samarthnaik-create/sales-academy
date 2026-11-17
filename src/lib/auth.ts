@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { NextAuthOptions, getServerSession } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
@@ -77,11 +78,12 @@ export const authOptions: NextAuthOptions = {
   },
 }
 
-// Null when signed out or when the account was deleted
-export async function getSession() {
+// Null when signed out or when the account was deleted.
+// cache(): layout and page share one session check (one database lookup) per request.
+export const getSession = cache(async () => {
   const session = await getServerSession(authOptions)
   return session?.user?.id ? session : null
-}
+})
 
 export async function requireUser() {
   const session = await getSession()

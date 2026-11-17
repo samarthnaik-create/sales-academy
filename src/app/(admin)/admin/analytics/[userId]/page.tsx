@@ -144,7 +144,7 @@ export default async function EmployeeAnalyticsPage({ params }: Props) {
           <div className="flex items-start gap-3 bg-white border border-zinc-200 rounded-xl px-4 py-3 mb-6">
             <Clock className="h-4 w-4 text-zinc-500 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-zinc-900">On track: Day {nextDay} quiz due in {formatDuration(quizWindow.deadline.getTime() - Date.now())}</p>
+              <p className="text-sm font-semibold text-zinc-900">On track: Day {nextDay} quiz due in {formatDuration(quizWindow.remainingMs)}</p>
               <p className="text-xs text-zinc-500 mt-0.5">Deadline {fmtDateTime(quizWindow.deadline)}.</p>
             </div>
           </div>

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle2, XCircle, Loader2, Trophy, ShieldAlert, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, XCircle, Loader2, ShieldAlert, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MAX_TAB_SWITCHES as MAX_VIOLATIONS, QUIZ_RULES as RULES, PASS_THRESHOLD } from '@/lib/quiz-config'
 
@@ -159,7 +159,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
       window.removeEventListener('beforeunload', onBeforeUnload)
       window.removeEventListener('pagehide', exitQuiz)
     }
-  }, [state]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state])
 
   // In-app navigation (sidebar links) unmounts the quiz. The deferred check skips React's
   // dev-mode mount → unmount → remount, which would otherwise end the quiz instantly.
@@ -170,7 +170,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
       mountedRef.current = false
       setTimeout(() => { if (!mountedRef.current) exitQuiz() }, 0)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   // Tab-switch detection — only active while quiz is being taken
   useEffect(() => {
@@ -209,7 +209,7 @@ export function QuizEngine({ course, questions, progress, hasNextDay, skipIntro,
       document.removeEventListener('visibilitychange', onVisibilityChange)
       window.removeEventListener('blur', onBlur)
     }
-  }, [state]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state])
 
   // ── Intro ───────────────────────────────────────────────────
   if (state === 'intro') {

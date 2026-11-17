@@ -54,6 +54,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
   const [error, setError] = useState('')
   const [dragOverModule, setDragOverModule] = useState<number | null>(null)
   const dragModuleRef = useRef<number | null>(null)
+  const [dragFromModule, setDragFromModule] = useState<number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const currentTopic = topics[activeTopic]
@@ -238,7 +239,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
               </button>
             </div>
             {videos.length === 0 ? (
-              <p className="text-xs text-zinc-400 py-2">No videos added — click "Add Video" to add YouTube, Vimeo or Google Drive links</p>
+              <p className="text-xs text-zinc-400 py-2">No videos added — click &ldquo;Add Video&rdquo; to add YouTube, Vimeo or Google Drive links</p>
             ) : (
               <div className="space-y-2">
                 {videos.map((v, i) => (
@@ -388,14 +389,14 @@ export function CourseEditor({ course }: { course: Course | null }) {
                         key={mi}
                         type="button"
                         draggable
-                        onDragStart={() => { dragModuleRef.current = mi }}
+                        onDragStart={() => { dragModuleRef.current = mi; setDragFromModule(mi) }}
                         onDragOver={e => { e.preventDefault(); setDragOverModule(mi) }}
                         onDragLeave={() => setDragOverModule(null)}
                         onDrop={() => dropModule(mi)}
-                        onDragEnd={() => { setDragOverModule(null); dragModuleRef.current = null }}
+                        onDragEnd={() => { setDragOverModule(null); dragModuleRef.current = null; setDragFromModule(null) }}
                         onClick={() => setActiveModule(mi)}
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-grab active:cursor-grabbing ${
-                          dragOverModule === mi && dragModuleRef.current !== mi
+                          dragOverModule === mi && dragFromModule !== mi
                             ? 'ring-2 ring-red-400 ring-offset-1'
                             : ''
                         } ${activeModule === mi ? 'bg-zinc-800 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
@@ -416,7 +417,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
                   {/* No modules empty state */}
                   {currentTopic.modules.length === 0 && (
                     <div className="text-center py-6 text-zinc-400 text-xs border border-dashed border-zinc-200 rounded-xl">
-                      No modules in this topic yet — click "Add Module" above
+                      No modules in this topic yet — click &ldquo;Add Module&rdquo; above
                     </div>
                   )}
 
@@ -459,7 +460,7 @@ export function CourseEditor({ course }: { course: Course | null }) {
                           </button>
                         </div>
                         {(currentModule.videos ?? []).length === 0 ? (
-                          <p className="text-[11px] text-zinc-400 py-1">No videos — click "Add Video" to embed YouTube, Vimeo or Google Drive</p>
+                          <p className="text-[11px] text-zinc-400 py-1">No videos — click &ldquo;Add Video&rdquo; to embed YouTube, Vimeo or Google Drive</p>
                         ) : (
                           <div className="space-y-2">
                             {(currentModule.videos ?? []).map((v, vi) => (

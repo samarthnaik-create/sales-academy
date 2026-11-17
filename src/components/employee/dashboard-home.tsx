@@ -101,15 +101,15 @@ export function DashboardHome({ firstName, completed, total, resume, days, child
           {tab === 'done' ? 'No days completed yet' : tab === 'progress' ? 'Nothing in progress' : 'No training days yet'}
         </p>
       ) : (
-        <div className="space-y-4">
+        <div key={tab} className="animate-fade space-y-4">
           {shown.map(d => {
             const s = status(d)
             const locked = s.tone === 'locked'
             return (
               <div
                 key={d.id}
-                className={`flex flex-col gap-5 rounded-2xl border bg-white p-4 transition-shadow sm:flex-row ${
-                  locked ? 'border-zinc-100' : 'border-zinc-200 hover:shadow-md'
+                className={`flex flex-col gap-5 rounded-2xl border bg-white p-4 transition-[box-shadow,transform] duration-200 sm:flex-row ${
+                  locked ? 'border-zinc-100' : 'border-zinc-200 hover:-translate-y-0.5 hover:shadow-md'
                 }`}
               >
                 {/* Day tile */}
@@ -148,7 +148,7 @@ export function DashboardHome({ firstName, completed, total, resume, days, child
                         Review
                       </Link>
                     ) : (
-                      <Link href={`/day/${d.dayNumber}`} className="inline-flex items-center gap-1.5 rounded-lg bg-red-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-900">
+                      <Link href={`/day/${d.dayNumber}`} className="inline-flex items-center gap-1.5 rounded-lg bg-red-800 px-4 py-2 text-sm font-medium text-white transition-[background-color,transform] hover:bg-red-900 active:scale-[0.97]">
                         {d.visited || d.attempts > 0 ? 'Continue' : 'Start day'} <ArrowRight className="h-4 w-4" />
                       </Link>
                     )}
