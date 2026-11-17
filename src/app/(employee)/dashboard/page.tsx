@@ -8,8 +8,9 @@ import { Announcement } from '@/models/Announcement'
 import { QuizAttempt } from '@/models/QuizAttempt'
 import { computeQuizWindow, trainingFinishedAt, nextIncompleteDay, formatDuration, WINDOW_HOURS } from '@/lib/quiz-window'
 import Link from 'next/link'
-import { Trophy, ArrowRight, Clock, AlertTriangle } from 'lucide-react'
-import { CourseSearch } from '@/components/employee/course-search'
+import { Clock, AlertTriangle, Megaphone } from 'lucide-react'
+import { DashboardHome, type DayCard } from '@/components/employee/dashboard-home'
+import { computeUnlocked } from '@/lib/unlock'
 
 interface TopicGroup { title: string; modules: { title: string }[] }
 
@@ -67,127 +68,77 @@ export default async function DashboardPage() {
     },
   } : null
 
-  // Build progress map keyed by string courseId
-  const progressMap = Object.fromEntries(
-    progressList.map(p => [String(p.courseId), {
-      unlocked: p.unlocked,
-      completed: p.completed,
-      score: p.score,
-      attempts: p.attempts,
-    }])
-  )
+  const progressMap = Object.fromEntries(progressList.map(p => [String(p.courseId), p]))
+  const unlockInput = Object.fromEntries(progressList.map(p => [String(p.courseId), { unlocked: p.unlocked, completed: p.completed, score: p.score }]))
+  const courseRefs = courses.map(c => ({ id: String(c._id), dayNumber: c.dayNumber }))
 
-  const completed = progressList.filter(p => p.completed).length
+  const days: DayCard[] = courses.map(c => {
+    const id = String(c._id)
+    const p = progressMap[id]
+    return {
+      id,
+      dayNumber: c.dayNumber,
+      title: c.title,
+      description: c.description ?? null,
+      unlocked: computeUnlocked(id, c.dayNumber, unlockInput, courseRefs),
+      completed: !!p?.completed,
+      score: p?.score ?? 0,
+      attempts: p?.attempts ?? 0,
+      visited: !!p?.lastVisited,
+    }
+  })
+
   const total = courses.length
-  const pct = total > 0 ? Math.round((completed / total) * 100) : 0
-  const allDone = pct === 100 && total > 0
+  const completed = days.filter(d => d.completed).length
+  const allDone = total > 0 && completed >= total
 
   // WINDOW_HOURS window to attempt the next quiz, restarted by every attempt
   const quizWindow = computeQuizWindow(attempts.map(a => a.createdAt), trainingFinishedAt(progressList, total))
   const nextDay = nextIncompleteDay(courses, progressList)
 
-  // Resume info
-  const resumePosition = resumeProgress
-    ? resolvePosition(resumeProgress.course?.content ?? null, resumeProgress.lastTopicIdx, resumeProgress.lastModuleIdx)
-    : null
-
-  // Map courses for CourseSearch
-  const coursesForSearch = courses.map(c => ({
-    id: String(c._id),
-    title: c.title,
-    description: c.description ?? null,
-    dayNumber: c.dayNumber,
-  }))
+  const resume = resumeProgress?.course ? {
+    dayNumber: resumeProgress.course.dayNumber,
+    title: resumeProgress.course.title,
+    position: resolvePosition(resumeProgress.course.content, resumeProgress.lastTopicIdx, resumeProgress.lastModuleIdx) || null,
+  } : null
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-900">Welcome back, {user.name?.split(' ')[0]} 👋</h1>
-        <p className="text-zinc-500 text-sm mt-1">Continue your sales training journey</p>
-      </div>
-
+    <DashboardHome firstName={user.name?.split(' ')[0] ?? 'there'} completed={completed} total={total} resume={resume} days={days}>
       {/* Announcements */}
       {announcements.length > 0 && (
-        <div className="space-y-2 mb-6">
+        <div className="space-y-2">
           {announcements.map(a => (
-            <div key={String(a._id)} className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
-              <span className="text-amber-500 text-base mt-0.5">📢</span>
+            <div key={String(a._id)} className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3">
+              <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
               <div>
-                <p className="text-sm font-semibold text-amber-900">{a.title}</p>
-                {a.body && <p className="text-xs text-amber-700 mt-0.5">{a.body}</p>}
+                <p className="text-sm font-semibold text-zinc-900">{a.title}</p>
+                {a.body && <p className="mt-0.5 whitespace-pre-line text-sm text-zinc-500">{a.body}</p>}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Resume banner */}
-      {resumeProgress?.course && !allDone && (
-        <Link href={`/day/${resumeProgress.course.dayNumber}`}
-          className="flex items-center justify-between bg-zinc-900 hover:bg-zinc-800 text-white rounded-2xl px-5 py-4 mb-6 group transition-colors">
-          <div>
-            <p className="text-xs text-zinc-400 font-medium mb-0.5">Continue where you left off</p>
-            <p className="font-semibold text-sm">Day {resumeProgress.course.dayNumber} · {resumeProgress.course.title}</p>
-            {resumePosition && <p className="text-xs text-zinc-400 mt-0.5">{resumePosition}</p>}
-          </div>
-          <ArrowRight className="h-5 w-5 text-zinc-400 group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0" />
-        </Link>
-      )}
-
-      {/* Progress banner */}
-      {allDone ? (
-        <div className="bg-green-600 rounded-2xl p-6 mb-8 text-white text-center">
-          <Trophy className="h-10 w-10 mx-auto mb-3 text-green-200" />
-          <h2 className="text-xl font-bold mb-1">Training Complete!</h2>
-          <p className="text-green-100 text-sm">You have completed all {total} days of the Sales Academy.</p>
-        </div>
-      ) : (
-        <div className="bg-red-600 rounded-2xl p-6 mb-8 text-white">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-red-100 text-sm font-medium">Overall Progress</p>
-              <p className="text-3xl font-bold mt-0.5">{pct}%</p>
-            </div>
-            <div className="text-right">
-              <p className="text-red-100 text-sm">{completed} of {total} days</p>
-              <p className="text-red-200 text-xs mt-0.5">completed</p>
-            </div>
-          </div>
-          <div className="h-2 bg-red-500/50 rounded-full overflow-hidden">
-            <div className="h-full bg-white rounded-full transition-all" style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-      )}
-
       {/* Quiz deadline */}
       {!allDone && quizWindow.deadline && nextDay && (
         quizWindow.overdueMs > 0 ? (
-          <Link href={`/day/${nextDay}`} className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-6 hover:bg-red-100 transition-colors">
-            <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+          <Link href={`/day/${nextDay}`} className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 transition-colors hover:bg-red-100">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
             <div>
               <p className="text-sm font-semibold text-red-800">Day {nextDay} quiz is overdue by {formatDuration(quizWindow.overdueMs)}</p>
-              <p className="text-xs text-red-700 mt-0.5">Attempt it as soon as possible. Your admin can see missed deadlines.</p>
+              <p className="mt-0.5 text-xs text-red-700">Attempt it as soon as possible. Your admin can see missed deadlines.</p>
             </div>
           </Link>
         ) : (
-          <Link href={`/day/${nextDay}`} className="flex items-start gap-3 bg-white border border-zinc-200 rounded-xl px-4 py-3 mb-6 hover:bg-zinc-50 transition-colors">
-            <Clock className="h-4 w-4 text-zinc-500 shrink-0 mt-0.5" />
+          <Link href={`/day/${nextDay}`} className="flex items-start gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 transition-colors hover:bg-zinc-50">
+            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" />
             <div>
               <p className="text-sm font-semibold text-zinc-900">Attempt your Day {nextDay} quiz within {formatDuration(quizWindow.deadline.getTime() - Date.now())}</p>
-              <p className="text-xs text-zinc-500 mt-0.5">You have {WINDOW_HOURS} hours after each quiz attempt to attempt the next one. Passing or not, any attempt resets the clock.</p>
+              <p className="mt-0.5 text-xs text-zinc-500">You have {WINDOW_HOURS} hours after each quiz attempt to attempt the next one. Passing or not, any attempt resets the clock.</p>
             </div>
           </Link>
         )
       )}
-
-      {total === 0 ? (
-        <div className="text-center py-16 text-zinc-400">
-          <p className="text-lg font-medium">No courses yet</p>
-          <p className="text-sm mt-1">Your admin will add courses soon.</p>
-        </div>
-      ) : (
-        <CourseSearch courses={coursesForSearch} progressMap={progressMap} />
-      )}
-    </div>
+    </DashboardHome>
   )
 }
