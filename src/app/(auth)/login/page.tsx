@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
@@ -33,14 +34,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-zinc-50 flex flex-col">
+      <main className="flex-1 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-red-600 rounded-xl mb-4">
-            <span className="text-white font-bold text-lg">SA</span>
-          </div>
+          <Image src="/icon.png" alt="Mohidin Properties" width={72} height={72} preload className="mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-zinc-900">Sales Academy</h1>
-          <p className="text-zinc-500 text-sm mt-1">Sign in to your account</p>
+          <p className="text-zinc-500 text-sm mt-1">Sign in to continue your training</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8">
@@ -70,6 +70,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(p => !p)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -97,6 +98,12 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+      </main>
+
+      <footer className="py-6 text-center text-xs text-zinc-400">
+        Sales Academy by <span className="font-medium text-zinc-500">Mohidin Properties</span>
+        <span className="mx-1.5">·</span>© {new Date().getFullYear()}
+      </footer>
     </div>
   )
 }

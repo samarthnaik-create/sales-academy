@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { BookOpen, LayoutDashboard, Users, LogOut, ShieldCheck, BarChart2, Megaphone } from 'lucide-react'
@@ -32,9 +33,7 @@ export function Sidebar({ userName, role }: SidebarProps) {
       {/* Logo */}
       <div className="px-4 py-5 border-b border-zinc-100">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-xs">SA</span>
-          </div>
+          <Image src="/icon.png" alt="Mohidin Properties" width={32} height={32} className="shrink-0" />
           <div>
             <p className="text-sm font-bold text-zinc-900 leading-tight">Sales Academy</p>
             {role === 'admin' && (
