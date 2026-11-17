@@ -35,7 +35,7 @@ export function Sidebar({ userName, role }: SidebarProps) {
         <div className="flex items-center gap-2.5">
           <Image src="/icon.png" alt="Mohidin Properties" width={32} height={32} className="shrink-0" />
           <div>
-            <p className="font-brand text-sm font-extrabold tracking-tight text-red-600 leading-tight">Sales Academy</p>
+            <p className="font-brand text-sm font-extrabold tracking-tight text-zinc-900 leading-tight">Sales Academy</p>
             {role === 'admin' && (
               <div className="flex items-center gap-1 mt-0.5">
                 <ShieldCheck className="h-3 w-3 text-red-600" />
