@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import {
-  ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Circle, Lock, PlayCircle,
+  AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, Circle, Lock, PlayCircle,
   StickyNote, FileQuestion, Trophy, BookOpen,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -88,6 +88,7 @@ export function LessonViewer({ course, quiz, start }: Props) {
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [noteState, setNoteState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [showNote, setShowNote] = useState(false)
+  const [missedNotice, setMissedNotice] = useState(false) // Finish clicked with lessons still unread
   const noteTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
   const lessonTop = useRef<HTMLDivElement>(null)
   const quizRef = useRef<HTMLDivElement>(null)
@@ -101,6 +102,8 @@ export function LessonViewer({ course, quiz, start }: Props) {
   const readCount = flat.filter(f => read.has(key(f.ti, f.mi))).length
   // Passing the quiz already proves the day was read; a day without reading is open straight away
   const quizOpen = quiz.completed || total === 0 || readCount >= total
+  const unread = flat.filter(f => !read.has(key(f.ti, f.mi)))
+  const label = (f: { ti: number; mi: number; title: string }) => (named ? `${f.ti + 1}.${f.mi + 1} ` : '') + f.title
   const pct = total ? Math.round((readCount / total) * 100) : 100
 
   useEffect(() => {
@@ -135,11 +138,16 @@ export function LessonViewer({ course, quiz, start }: Props) {
     setPos({ ti, mi })
     setOpenTopics(prev => new Set(prev).add(ti))
     setShowNote(false)
+    setMissedNotice(false)
     lessonTop.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   function finish() {
     setRead(prev => new Set(prev).add(currentKey))
+    // Lessons skipped earlier keep the quiz locked: say which ones, right here
+    const stillUnread = unread.filter(f => key(f.ti, f.mi) !== currentKey)
+    if (stillUnread.length > 0 && !quiz.completed) { setMissedNotice(true); return }
+    setMissedNotice(false)
     setTimeout(() => quizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50)
   }
 
@@ -267,6 +275,25 @@ export function LessonViewer({ course, quiz, start }: Props) {
                   <p className="text-sm italic text-zinc-400">No reading for this lesson.</p>
                 )}
               </div>
+
+              {missedNotice && unread.length > 0 && (
+                <div className="mx-6 mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:mx-8">
+                  <p className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    You haven&apos;t read {unread.length === 1 ? 'this lesson' : `these ${unread.length} lessons`} yet
+                  </p>
+                  <p className="mt-1 text-xs text-amber-800">The quiz unlocks once every lesson is read. Tap a lesson to open it.</p>
+                  <ul className="mt-3 flex flex-wrap gap-2">
+                    {unread.map(f => (
+                      <li key={key(f.ti, f.mi)}>
+                        <button onClick={() => go(f.ti, f.mi)} className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-left text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100">
+                          {label(f)}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Previous / next */}
               <div className="flex items-center justify-between gap-4 border-t border-zinc-100 px-6 py-4 sm:px-8">
@@ -437,8 +464,22 @@ export function LessonViewer({ course, quiz, start }: Props) {
                   <div className="h-full rounded-full bg-red-800 transition-all" style={{ width: `${pct}%` }} />
                 </div>
                 <p className="mt-2 text-xs text-zinc-500">
-                  Read all lessons to unlock the quiz · {total - readCount} left
+                  Read all lessons to unlock the quiz · {unread.length} left
                 </p>
+                {unread.length > 0 && unread.length <= 6 && (
+                  <div className="mt-3 border-t border-zinc-100 pt-3">
+                    <p className="text-xs font-medium text-zinc-500">Not read yet</p>
+                    <ul className="mt-1.5 space-y-1">
+                      {unread.map(f => (
+                        <li key={key(f.ti, f.mi)}>
+                          <button onClick={() => go(f.ti, f.mi)} className="flex w-full items-center gap-2 text-left text-xs text-red-800 hover:underline">
+                            <Circle className="h-3 w-3 shrink-0 text-zinc-300" /> {label(f)}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </section>
