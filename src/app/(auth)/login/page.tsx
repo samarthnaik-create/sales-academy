@@ -39,7 +39,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Image src="/icon.png" alt="Mohidin Properties" width={72} height={72} preload className="mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-zinc-900">Sales Academy</h1>
+          <h1 className="font-brand text-3xl font-extrabold tracking-tight text-red-600">Sales Academy</h1>
           <p className="text-zinc-500 text-sm mt-1">Sign in to continue your training</p>
         </div>
 
@@ -101,7 +101,7 @@ export default function LoginPage() {
       </main>
 
       <footer className="py-6 text-center text-xs text-zinc-400">
-        Sales Academy by <span className="font-medium text-zinc-500">Mohidin Properties</span>
+        <span className="font-brand font-bold text-red-600">Sales Academy</span> by <span className="font-medium text-zinc-500">Mohidin Properties</span>
         <span className="mx-1.5">·</span>© {new Date().getFullYear()}
       </footer>
     </div>
